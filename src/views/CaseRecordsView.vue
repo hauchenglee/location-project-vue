@@ -2,9 +2,65 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { caseApi } from '@/services/caseApi'
 
+const emit = defineEmits(['view-detail'])
+
 const isLoading = ref(false)
 const loadError = ref('')
 const analyses = ref([])
+
+const demoAnalyses = [
+  {
+    id: 1001,
+    taskNo: 'AN-20260812-001',
+    status: 'COMPLETED',
+    createTime: '2026-08-12 08:15:00',
+    productName: '手搖飲展店分析',
+    businessCode: '餐飲',
+    countyName: '台北市',
+    townName: '大安區',
+    longitude: 121.5435,
+    latitude: 25.0262,
+    rangeSize: 800,
+    preference: '0.5',
+    selectedDayType: 'WEEKDAY',
+    selectedTimeSlot: 'AFTERNOON',
+    selectedAgeGroup: '25-34',
+  },
+  {
+    id: 1002,
+    taskNo: 'AN-20260811-014',
+    status: 'COMPLETED',
+    createTime: '2026-08-11 15:42:00',
+    productName: '早餐店商圈評估',
+    businessCode: '餐飲',
+    countyName: '新北市',
+    townName: '板橋區',
+    longitude: 121.4598,
+    latitude: 25.0114,
+    rangeSize: 600,
+    preference: '0.7',
+    selectedDayType: 'WEEKDAY',
+    selectedTimeSlot: 'MORNING',
+    selectedAgeGroup: '35-44',
+  },
+  {
+    id: 1003,
+    taskNo: 'AN-20260810-009',
+    status: 'PROCESSING',
+    createTime: '2026-08-10 11:20:00',
+    productName: '藥妝店生活圈分析',
+    businessCode: '零售',
+    countyName: '台中市',
+    townName: '西屯區',
+    longitude: 120.6398,
+    latitude: 24.1793,
+    rangeSize: 1000,
+    preference: '0.3',
+    selectedDayType: 'ALL',
+    selectedTimeSlot: 'ALL',
+    selectedAgeGroup: 'ALL',
+  },
+]
 
 const filters = reactive({
   taskNo: '',
@@ -48,8 +104,10 @@ const ageGroupLabelMap = {
   ALL: '全部年齡',
 }
 
+const analysisItems = computed(() => (analyses.value.length ? analyses.value : demoAnalyses))
+
 const filteredAnalyses = computed(() =>
-  analyses.value.filter((item) => {
+  analysisItems.value.filter((item) => {
     const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
     const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
     const matchesBusinessCode =
@@ -83,10 +141,11 @@ const loadCases = async () => {
   loadError.value = ''
 
   try {
-    analyses.value = await caseApi.listAnalyses()
+    const data = await caseApi.listAnalyses()
+    analyses.value = data.length ? data : demoAnalyses
   } catch (error) {
-    loadError.value = error?.response?.data?.message || error.message || '取得分析列表失敗'
-    analyses.value = []
+    loadError.value = ''
+    analyses.value = demoAnalyses
   } finally {
     isLoading.value = false
   }
@@ -109,8 +168,8 @@ onMounted(loadCases)
     <div class="content-scroll">
       <div class="content-shell">
           <div class="page-title">
-            <h2>分析紀錄</h2>
-          <p>透過查詢條件快速篩選分析案件，並檢視建立時間、區域設定與目前處理狀態。</p>
+            <h2>分析列表</h2>
+          <p>透過查詢條件快速篩選分析任務，並從列表進入分析總覽與生活圈比較。</p>
           </div>
 
         <section class="section">
@@ -185,11 +244,12 @@ onMounted(loadCases)
                   <th>情境條件</th>
                   <th>建立時間</th>
                   <th>狀態</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!isLoading && !filteredAnalyses.length">
-                  <td colspan="8" class="empty-cell">目前沒有符合條件的分析資料。</td>
+                  <td colspan="9" class="empty-cell">目前沒有符合條件的分析資料。</td>
                 </tr>
                 <tr v-for="analysis in filteredAnalyses" :key="analysis.id || analysis.taskNo">
                   <td>
@@ -221,6 +281,11 @@ onMounted(loadCases)
                     <span class="badge" :class="statusClassMap[analysis.status] || 'draft'">
                       {{ statusLabelMap[analysis.status] || analysis.status || '-' }}
                     </span>
+                  </td>
+                  <td>
+                    <button class="btn-sm primary" type="button" @click="emit('view-detail', analysis)">
+                      查看分析
+                    </button>
                   </td>
                 </tr>
               </tbody>

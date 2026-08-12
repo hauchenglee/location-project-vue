@@ -10,7 +10,7 @@ const emit = defineEmits(['navigate'])
 
 const tabs = [
   { key: 'create', label: '建立案件' },
-  { key: 'records', label: '案件紀錄' },
+  { key: 'records', label: '分析列表' },
 ]
 </script>
 

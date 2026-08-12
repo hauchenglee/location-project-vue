@@ -130,7 +130,7 @@ const submitAnalysis = async () => {
                 <input v-model="form.locationMode" type="radio" name="locationMode" value="pin" />
                 <span class="mode-card">
                   <strong>地圖放圖釘</strong>
-                  <span>填寫經緯度欄位，適合明確候選點位。</span>
+                  <span>填寫經緯度欄位，適合已有明確位置時使用。</span>
                 </span>
               </label>
             </div>

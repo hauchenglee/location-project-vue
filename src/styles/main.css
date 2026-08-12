@@ -456,6 +456,27 @@ button:disabled {
   line-height: 1.6;
 }
 
+.form-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.form-message.success {
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--success);
+}
+
+.form-message.error {
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
 .footer-actions,
 .actions {
   display: flex;
@@ -682,6 +703,19 @@ tbody tr:hover {
   border: 1px solid rgba(100, 116, 139, 0.16);
   background: rgba(100, 116, 139, 0.12);
   color: #475569;
+}
+
+.badge.failed {
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.empty-cell {
+  height: 120px;
+  color: var(--muted);
+  text-align: center;
+  vertical-align: middle;
 }
 
 .row-actions {

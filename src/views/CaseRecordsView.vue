@@ -3,40 +3,102 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { caseApi } from '@/services/caseApi'
 
 const isLoading = ref(false)
-const cases = ref([])
-const total = ref(12)
+const loadError = ref('')
+const analyses = ref([])
 
 const filters = reactive({
-  caseId: '',
+  taskNo: '',
   productName: '',
-  productType: '全部類型',
+  businessCode: '全部類型',
   status: '全部狀態',
 })
 
 const statusClassMap = {
-  已完成: 'done',
-  分析中: 'run',
-  草稿: 'draft',
+  COMPLETED: 'done',
+  PROCESSING: 'run',
+  PENDING: 'draft',
+  FAILED: 'failed',
+  ACTIVE: 'done',
+  INACTIVE: 'draft',
 }
 
-const paginationText = computed(() => `顯示第 1 - ${cases.value.length} 筆，共 ${total.value} 筆資料`)
+const statusLabelMap = {
+  COMPLETED: '完成',
+  PROCESSING: '處理中',
+  PENDING: '待處理',
+  FAILED: '失敗',
+  ACTIVE: '有效',
+  INACTIVE: '無效',
+}
+
+const dayTypeLabelMap = {
+  ALL: '全部',
+  WEEKDAY: '平日',
+  WEEKEND: '假日',
+}
+
+const timeSlotLabelMap = {
+  ALL: '全部時段',
+  MORNING: '早上',
+  AFTERNOON: '下午',
+  EVENING: '晚上',
+}
+
+const ageGroupLabelMap = {
+  ALL: '全部年齡',
+}
+
+const filteredAnalyses = computed(() =>
+  analyses.value.filter((item) => {
+    const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
+    const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
+    const matchesBusinessCode =
+      filters.businessCode === '全部類型' || item.businessCode === filters.businessCode
+    const matchesStatus = filters.status === '全部狀態' || item.status === filters.status
+
+    return matchesTaskNo && matchesProductName && matchesBusinessCode && matchesStatus
+  }),
+)
+
+const total = computed(() => filteredAnalyses.value.length)
+const paginationText = computed(() => `顯示第 ${total.value ? 1 : 0} - ${total.value} 筆，共 ${total.value} 筆資料`)
+
+const formatDateTime = (value) => {
+  if (!value) return '-'
+  return String(value).replace('T', ' ')
+}
+
+const formatLocation = (item) => {
+  const district = [item.countyName, item.townName].filter(Boolean).join(' / ')
+  const coordinate = [item.latitude, item.longitude].filter((value) => value !== null && value !== undefined && value !== '').join(', ')
+  return district || coordinate || '-'
+}
+
+const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
+const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
+const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
 
 const loadCases = async () => {
   isLoading.value = true
-  const response = await caseApi.searchCases({ ...filters })
-  cases.value = response.items
-  total.value = response.total
-  isLoading.value = false
+  loadError.value = ''
+
+  try {
+    analyses.value = await caseApi.listAnalyses()
+  } catch (error) {
+    loadError.value = error?.response?.data?.message || error.message || '取得分析列表失敗'
+    analyses.value = []
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const resetFilters = () => {
   Object.assign(filters, {
-    caseId: '',
+    taskNo: '',
     productName: '',
-    productType: '全部類型',
+    businessCode: '全部類型',
     status: '全部狀態',
   })
-  loadCases()
 }
 
 onMounted(loadCases)
@@ -46,29 +108,29 @@ onMounted(loadCases)
   <main class="main records-layout">
     <div class="content-scroll">
       <div class="content-shell">
-        <div class="page-title">
-          <h2>案件紀錄</h2>
-          <p>透過查詢條件快速篩選案件，並檢視建立時間、區域設定與目前處理狀態。</p>
-        </div>
+          <div class="page-title">
+            <h2>分析紀錄</h2>
+          <p>透過查詢條件快速篩選分析案件，並檢視建立時間、區域設定與目前處理狀態。</p>
+          </div>
 
         <section class="section">
           <div class="section-header">
             <h3>搜尋條件</h3>
-            <p>可依案件編號、商品名稱、商品類型與案件狀態進行查詢。</p>
+            <p>可依案件號碼、商品名稱、商品類型與處理狀態進行篩選。</p>
           </div>
 
           <div class="grid-4">
             <div class="field">
-              <label for="caseId">案件編號</label>
-              <input id="caseId" v-model="filters.caseId" type="text" placeholder="例如：CA-20260730-001" />
+              <label for="taskNo">案件號碼</label>
+              <input id="taskNo" v-model="filters.taskNo" type="text" placeholder="例如：AN-20260812-001" />
             </div>
             <div class="field">
               <label for="productNameFilter">商品名稱</label>
               <input id="productNameFilter" v-model="filters.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
             </div>
             <div class="field">
-              <label for="productTypeFilter">商品類型</label>
-              <select id="productTypeFilter" v-model="filters.productType">
+              <label for="businessCodeFilter">商品類型</label>
+              <select id="businessCodeFilter" v-model="filters.businessCode">
                 <option>全部類型</option>
                 <option>餐飲</option>
                 <option>零售</option>
@@ -76,36 +138,38 @@ onMounted(loadCases)
               </select>
             </div>
             <div class="field">
-              <label for="statusFilter">案件狀態</label>
+              <label for="statusFilter">處理狀態</label>
               <select id="statusFilter" v-model="filters.status">
                 <option>全部狀態</option>
-                <option>已完成</option>
-                <option>分析中</option>
-                <option>草稿</option>
+                <option value="PENDING">待處理</option>
+                <option value="PROCESSING">處理中</option>
+                <option value="COMPLETED">完成</option>
+                <option value="FAILED">失敗</option>
               </select>
             </div>
           </div>
 
           <div class="actions">
             <button class="btn" type="button" @click="resetFilters">清除條件</button>
-            <button class="btn primary" type="button" :disabled="isLoading" @click="loadCases">搜尋案件</button>
+            <button class="btn primary" type="button" :disabled="isLoading" @click="loadCases">
+              {{ isLoading ? '載入中' : '重新取得列表' }}
+            </button>
           </div>
         </section>
 
         <section class="section">
           <div class="section-header">
-            <h3>搜尋結果</h3>
-            <p>以下列表顯示符合條件的案件資料。</p>
+            <h3>分析列表</h3>
+            <p>以下列表顯示符合條件的分析案件。</p>
           </div>
+
+          <div v-if="loadError" class="form-message error">{{ loadError }}</div>
 
           <div class="toolbar">
             <div class="toolbar-left">
-              <span class="count">共 12 筆案件</span>
-              <span class="pill">最近更新優先</span>
+              <span class="count">共 {{ total }} 筆分析</span>
+              <span class="pill">最近建立優先</span>
               <span class="pill">可橫向捲動查看完整欄位</span>
-            </div>
-            <div>
-              <button class="btn" type="button">匯出清單</button>
             </div>
           </div>
 
@@ -113,40 +177,50 @@ onMounted(loadCases)
             <table>
               <thead>
                 <tr>
-                  <th>案件編號</th>
-                  <th>商品名稱</th>
-                  <th>商品類型</th>
-                  <th>區域設定</th>
+                  <th>案件</th>
+                  <th>商品</th>
+                  <th>區域</th>
+                  <th>經緯度</th>
+                  <th>範圍 / 偏好</th>
+                  <th>情境條件</th>
                   <th>建立時間</th>
-                  <th>最後更新</th>
                   <th>狀態</th>
-                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="caseItem in cases" :key="caseItem.id">
+                <tr v-if="!isLoading && !filteredAnalyses.length">
+                  <td colspan="8" class="empty-cell">目前沒有符合條件的分析資料。</td>
+                </tr>
+                <tr v-for="analysis in filteredAnalyses" :key="analysis.id || analysis.taskNo">
                   <td>
-                    <span class="case-id">{{ caseItem.id }}</span>
-                    <span class="sub">建立人員：{{ caseItem.owner }}</span>
+                    <span class="case-id">{{ analysis.taskNo || '-' }}</span>
+                    <span class="sub">系統編號：{{ analysis.id || '-' }}</span>
                   </td>
                   <td>
-                    {{ caseItem.name }}
-                    <span class="sub">{{ caseItem.note }}</span>
+                    {{ analysis.productName || '-' }}
+                    <span class="sub">商品類型：{{ analysis.businessCode || '-' }}</span>
                   </td>
-                  <td><span class="badge type">{{ caseItem.type }}</span></td>
                   <td>
-                    {{ caseItem.locationMode }}
-                    <span class="sub">{{ caseItem.location }}</span>
+                    {{ formatLocation(analysis) }}
+                    <span class="sub">行政區域</span>
                   </td>
-                  <td>{{ caseItem.createdAt }}</td>
-                  <td>{{ caseItem.updatedAt }}</td>
-                  <td><span class="badge" :class="statusClassMap[caseItem.status]">{{ caseItem.status }}</span></td>
                   <td>
-                    <div class="row-actions">
-                      <button v-for="action in caseItem.actions" :key="action" class="btn-sm" type="button">
-                        {{ action }}
-                      </button>
-                    </div>
+                    {{ analysis.latitude ?? '-' }}
+                    <span class="sub">經度：{{ analysis.longitude ?? '-' }}</span>
+                  </td>
+                  <td>
+                    {{ analysis.rangeSize ?? '-' }} 公尺
+                    <span class="sub">偏好：{{ analysis.preference || '-' }}</span>
+                  </td>
+                  <td>
+                    {{ formatDayType(analysis.selectedDayType) }} / {{ formatTimeSlot(analysis.selectedTimeSlot) }}
+                    <span class="sub">年齡層：{{ formatAgeGroup(analysis.selectedAgeGroup) }}</span>
+                  </td>
+                  <td>{{ formatDateTime(analysis.createTime) }}</td>
+                  <td>
+                    <span class="badge" :class="statusClassMap[analysis.status] || 'draft'">
+                      {{ statusLabelMap[analysis.status] || analysis.status || '-' }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -156,11 +230,9 @@ onMounted(loadCases)
           <div class="pagination">
             <div class="pagination-info">{{ paginationText }}</div>
             <div class="pagination-actions">
-              <button class="btn-sm" type="button">上一頁</button>
-              <button class="btn-sm" type="button">1</button>
-              <button class="btn-sm" type="button">2</button>
-              <button class="btn-sm" type="button">3</button>
-              <button class="btn-sm" type="button">下一頁</button>
+              <button class="btn-sm" type="button" disabled>上一頁</button>
+              <button class="btn-sm" type="button" disabled>1</button>
+              <button class="btn-sm" type="button" disabled>下一頁</button>
             </div>
           </div>
         </section>

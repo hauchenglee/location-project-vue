@@ -1,54 +1,74 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import LocationMap from '@/components/LocationMap.vue'
 import { caseApi } from '@/services/caseApi'
 
 const isSubmitting = ref(false)
+const submitError = ref('')
+const submitResult = ref(null)
 
-const form = reactive({
+const initialForm = {
+  taskNo: '',
   productName: '',
-  productType: '請選擇類型',
-  note: '',
+  businessCode: '',
   locationMode: 'district',
-  city: '請選擇縣市',
-  district: '請先選擇縣市',
-  districtRadius: 500,
-  lat: '',
-  lng: '',
-  pinRadius: 500,
-  dayType: '平日',
-  timeSlot: '早餐',
-  targetAge: '18-24',
-  priceRange: '100 以下',
-  parkingDependency: '低',
-  rentBudget: '',
-})
-
-const resetForm = () => {
-  Object.assign(form, {
-    productName: '',
-    productType: '請選擇類型',
-    note: '',
-    locationMode: 'district',
-    city: '請選擇縣市',
-    district: '請先選擇縣市',
-    districtRadius: 500,
-    lat: '',
-    lng: '',
-    pinRadius: 500,
-    dayType: '平日',
-    timeSlot: '早餐',
-    targetAge: '18-24',
-    priceRange: '100 以下',
-    parkingDependency: '低',
-    rentBudget: '',
-  })
+  countyName: '',
+  townName: '',
+  longitude: '',
+  latitude: '',
+  rangeSize: 500,
+  preference: '0.5',
+  selectedDayType: 'ALL',
+  selectedTimeSlot: 'ALL',
+  selectedAgeGroup: 'ALL',
 }
 
-const createCase = async () => {
+const form = reactive({ ...initialForm })
+
+const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 500))
+
+const statusLabelMap = {
+  COMPLETED: '完成',
+  PROCESSING: '處理中',
+  PENDING: '待處理',
+  FAILED: '失敗',
+  ACTIVE: '有效',
+  INACTIVE: '無效',
+}
+
+const resetForm = () => {
+  Object.assign(form, initialForm)
+  submitError.value = ''
+  submitResult.value = null
+}
+
+const createPayload = () => ({
+  taskNo: form.taskNo || null,
+  productName: form.productName,
+  businessCode: form.businessCode,
+  countyName: form.locationMode === 'district' ? form.countyName || null : null,
+  townName: form.locationMode === 'district' ? form.townName || null : null,
+  longitude: form.locationMode === 'pin' && form.longitude !== '' ? Number(form.longitude) : null,
+  latitude: form.locationMode === 'pin' && form.latitude !== '' ? Number(form.latitude) : null,
+  rangeSize: rangeSize.value,
+  preference: form.preference,
+  selectedDayType: form.selectedDayType,
+  selectedTimeSlot: form.selectedTimeSlot,
+  selectedAgeGroup: form.selectedAgeGroup,
+})
+
+const submitAnalysis = async () => {
   isSubmitting.value = true
-  await caseApi.createCase({ ...form })
-  isSubmitting.value = false
+  submitError.value = ''
+  submitResult.value = null
+
+  try {
+    submitResult.value = await caseApi.submitAnalysis(createPayload())
+  } catch (error) {
+    submitError.value = error?.response?.data?.message || error.message || '提交分析失敗'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -58,41 +78,43 @@ const createCase = async () => {
       <div class="left-scroll">
         <div class="form-shell">
           <div class="page-title">
-            <h2>建立新案件</h2>
-            <p>請依序完成案件基本資料、區域設定與情境條件，以建立分析案件。</p>
+            <h2>提交分析</h2>
+            <p>填寫商品、區域與客群條件，建立新的選址分析。</p>
           </div>
 
           <div class="section">
             <div class="section-header">
-              <h3>案件基本資料</h3>
+              <h3>分析基本資料</h3>
               <p>輸入案件識別資訊與商品內容。</p>
             </div>
 
             <div class="grid-2">
               <div class="field">
-                <label for="productName">商品名稱</label>
-                <input id="productName" v-model="form.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
+                <label for="taskNo">案件號碼</label>
+                <input id="taskNo" v-model="form.taskNo" type="text" placeholder="例如：AN-20260812-001" />
               </div>
               <div class="field">
-                <label for="productType">商品類型</label>
-                <select id="productType" v-model="form.productType">
-                  <option>請選擇類型</option>
-                  <option>餐飲</option>
-                  <option>零售</option>
-                  <option>服務</option>
-                </select>
+                <label for="productName">商品名稱</label>
+                <input id="productName" v-model="form.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
               </div>
             </div>
 
             <div class="field">
-              <label for="note">備註</label>
-              <input id="note" v-model="form.note" type="text" placeholder="可填寫此案件的簡短補充說明" />
+              <label for="businessCode">商品類型</label>
+              <select id="businessCode" v-model="form.businessCode">
+                <option value="">請選擇商品類型</option>
+                <option value="餐飲">餐飲</option>
+                <option value="零售">零售</option>
+                <option value="服務">服務</option>
+              </select>
+              <div class="field-note">選擇最接近的商品類型，讓分析結果更貼近實際經營情境。</div>
             </div>
           </div>
 
           <div class="section">
             <div class="section-header">
               <h3>區域設定</h3>
+              <p>設定分析範圍，可用行政區或精確座標作為分析中心。</p>
             </div>
 
             <div class="mode-switch">
@@ -100,7 +122,7 @@ const createCase = async () => {
                 <input v-model="form.locationMode" type="radio" name="locationMode" value="district" />
                 <span class="mode-card">
                   <strong>依行政區設定</strong>
-                  <span>顯示縣市與行政區選單，適合前期區域探索。</span>
+                  <span>填寫縣市與鄉鎮市區，適合前期區域探索。</span>
                 </span>
               </label>
 
@@ -108,22 +130,20 @@ const createCase = async () => {
                 <input v-model="form.locationMode" type="radio" name="locationMode" value="pin" />
                 <span class="mode-card">
                   <strong>地圖放圖釘</strong>
-                  <span>顯示經緯度欄位，適合明確候選點位。</span>
+                  <span>填寫經緯度欄位，適合明確候選點位。</span>
                 </span>
               </label>
             </div>
 
             <div class="mode-panels">
               <div v-show="form.locationMode === 'district'" class="mode-panel active">
-                <div class="info-inline">
-                  請選擇縣市與行政區，系統將依所選範圍進行分析設定。
-                </div>
+                <div class="info-inline">請選擇縣市與鄉鎮市區，系統會以該區域作為分析基準。</div>
 
                 <div class="grid-2">
                   <div class="field">
-                    <label for="city">縣市</label>
-                    <select id="city" v-model="form.city">
-                      <option>請選擇縣市</option>
+                    <label for="countyName">縣市</label>
+                    <select id="countyName" v-model="form.countyName">
+                      <option value="">請選擇縣市</option>
                       <option>台北市</option>
                       <option>新北市</option>
                       <option>桃園市</option>
@@ -132,9 +152,9 @@ const createCase = async () => {
                     </select>
                   </div>
                   <div class="field">
-                    <label for="district">行政區 / 鄉鎮市區</label>
-                    <select id="district" v-model="form.district">
-                      <option>請先選擇縣市</option>
+                    <label for="townName">鄉鎮市區</label>
+                    <select id="townName" v-model="form.townName">
+                      <option value="">請選擇鄉鎮市區</option>
                       <option>大安區</option>
                       <option>信義區</option>
                       <option>中山區</option>
@@ -142,107 +162,93 @@ const createCase = async () => {
                     </select>
                   </div>
                 </div>
-
-                <div class="field">
-                  <label for="districtRadius">分析半徑（公尺）</label>
-                  <input id="districtRadius" v-model="form.districtRadius" type="number" />
-                  <div class="field-note">以行政區中心點或指定規則作為分析範圍基準。</div>
-                </div>
               </div>
 
               <div v-show="form.locationMode === 'pin'" class="mode-panel active">
-                <div class="info-inline">
-                  請於地圖指定位置，或輸入經緯度座標，以設定分析中心點。
-                </div>
+                <div class="info-inline">請於地圖指定位置，或輸入經緯度座標，以設定分析中心點。</div>
 
                 <div class="grid-2">
                   <div class="field">
-                    <label for="lat">緯度（Latitude）</label>
-                    <input id="lat" v-model="form.lat" type="text" placeholder="例如：25.0330" />
+                    <label for="latitude">緯度</label>
+                    <input id="latitude" v-model="form.latitude" type="number" step="0.0000001" placeholder="例如：25.0330" />
                   </div>
                   <div class="field">
-                    <label for="lng">經度（Longitude）</label>
-                    <input id="lng" v-model="form.lng" type="text" placeholder="例如：121.5654" />
+                    <label for="longitude">經度</label>
+                    <input id="longitude" v-model="form.longitude" type="number" step="0.0000001" placeholder="例如：121.5654" />
                   </div>
                 </div>
-
-                <div class="field">
-                  <label for="pinRadius">分析半徑（公尺）</label>
-                  <input id="pinRadius" v-model="form.pinRadius" type="number" />
-                  <div class="field-note">以圖釘位置為中心向外建立分析半徑。</div>
-                </div>
               </div>
+            </div>
+
+            <div class="field">
+              <label for="rangeSize">分析範圍（公尺）</label>
+              <input id="rangeSize" v-model="form.rangeSize" type="number" min="500" step="100" />
+              <div class="field-note">建議至少 500 公尺，範圍越大會納入越多周邊資料。</div>
             </div>
           </div>
 
           <div class="section">
             <div class="section-header">
               <h3>情境條件</h3>
-              <p>請設定分析所需的條件參數，以利後續評估作業。</p>
+              <p>設定分析偏好、日別、時段與目標年齡層。</p>
             </div>
 
             <div class="grid-2">
               <div class="field">
-                <label for="dayType">日別</label>
-                <select id="dayType" v-model="form.dayType">
-                  <option>平日</option>
-                  <option>假日</option>
+                <label for="preference">分析偏好</label>
+                <select id="preference" v-model="form.preference">
+                  <option value="0.1">0.1</option>
+                  <option value="0.3">0.3</option>
+                  <option value="0.5">0.5</option>
+                  <option value="0.7">0.7</option>
+                  <option value="0.9">0.9</option>
                 </select>
               </div>
               <div class="field">
-                <label for="timeSlot">時段</label>
-                <select id="timeSlot" v-model="form.timeSlot">
-                  <option>早餐</option>
-                  <option>午餐</option>
-                  <option>下午茶</option>
-                  <option>晚餐</option>
-                  <option>宵夜</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="field">
-                <label for="targetAge">目標年齡層</label>
-                <select id="targetAge" v-model="form.targetAge">
-                  <option>18-24</option>
-                  <option>25-34</option>
-                  <option>35-44</option>
-                  <option>45-54</option>
-                  <option>55+</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="priceRange">客單價</label>
-                <select id="priceRange" v-model="form.priceRange">
-                  <option>100 以下</option>
-                  <option>100 - 300</option>
-                  <option>300 - 600</option>
-                  <option>600 以上</option>
+                <label for="selectedDayType">日別</label>
+                <select id="selectedDayType" v-model="form.selectedDayType">
+                  <option value="ALL">全部</option>
+                  <option value="WEEKDAY">平日</option>
+                  <option value="WEEKEND">假日</option>
                 </select>
               </div>
             </div>
 
             <div class="grid-2">
               <div class="field">
-                <label for="parkingDependency">停車依賴程度</label>
-                <select id="parkingDependency" v-model="form.parkingDependency">
-                  <option>低</option>
-                  <option>中</option>
-                  <option>高</option>
+                <label for="selectedTimeSlot">時段</label>
+                <select id="selectedTimeSlot" v-model="form.selectedTimeSlot">
+                  <option value="ALL">全部</option>
+                  <option value="MORNING">早上</option>
+                  <option value="AFTERNOON">下午</option>
+                  <option value="EVENING">晚上</option>
                 </select>
               </div>
               <div class="field">
-                <label for="rentBudget">租金預算</label>
-                <input id="rentBudget" v-model="form.rentBudget" type="number" placeholder="例如：80000" />
+                <label for="selectedAgeGroup">年齡層</label>
+                <select id="selectedAgeGroup" v-model="form.selectedAgeGroup">
+                  <option value="ALL">全部</option>
+                  <option value="0-14">0-14</option>
+                  <option value="15-24">15-24</option>
+                  <option value="25-34">25-34</option>
+                  <option value="35-44">35-44</option>
+                  <option value="45-54">45-54</option>
+                  <option value="55-64">55-64</option>
+                  <option value="65+">65+</option>
+                </select>
               </div>
             </div>
           </div>
 
+          <div v-if="submitError" class="form-message error">{{ submitError }}</div>
+          <div v-if="submitResult" class="form-message success">
+            已提交分析：{{ submitResult.taskNo || submitResult.id }}，目前狀態 {{ statusLabelMap[submitResult.status] || '待處理' }}。
+          </div>
+
           <div class="footer-actions">
             <button class="btn" type="button" @click="resetForm">清除</button>
-            <button class="btn primary" type="button" :disabled="isSubmitting" @click="createCase">
-              建立案件
+            <button class="btn primary" type="button" :disabled="isSubmitting" @click="submitAnalysis">
+              {{ isSubmitting ? '提交中' : '提交分析' }}
             </button>
           </div>
         </div>
@@ -253,9 +259,9 @@ const createCase = async () => {
       <div class="map-wrap">
         <LocationMap
           :mode="form.locationMode"
-          :lat="form.lat || '25.0330'"
-          :lng="form.lng || '121.5654'"
-          :radius="form.locationMode === 'district' ? form.districtRadius : form.pinRadius"
+          :lat="form.latitude || '25.0330'"
+          :lng="form.longitude || '121.5654'"
+          :radius="rangeSize"
         />
       </div>
     </aside>

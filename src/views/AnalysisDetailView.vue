@@ -12,9 +12,16 @@ const emit = defineEmits(['back'])
 
 const isParameterOpen = ref(true)
 const isMapOpen = ref(true)
-const activeCircleId = ref('zhongxiao')
+const activeClusterId = ref(null)
 
-const baseAnalysis = computed(() => ({
+const demoMetricClusters = [
+  { id: 501, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.539, 25.029], [121.548, 25.029], [121.548, 25.023], [121.539, 25.023], [121.539, 25.029]]] }, compositeScore: 91, businessScore: 86, populationScore: 94, trafficScore: 90 },
+  { id: 502, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.528, 25.026], [121.536, 25.026], [121.536, 25.019], [121.528, 25.019], [121.528, 25.026]]] }, compositeScore: 84, businessScore: 78, populationScore: 92, trafficScore: 73 },
+  { id: 503, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.532, 25.035], [121.541, 25.035], [121.541, 25.028], [121.532, 25.028], [121.532, 25.035]]] }, compositeScore: 76, businessScore: 70, populationScore: 81, trafficScore: 82 },
+  { id: 504, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.55, 25.027], [121.557, 25.027], [121.557, 25.021], [121.55, 25.021], [121.55, 25.027]]] }, compositeScore: 73, businessScore: 74, populationScore: 76, trafficScore: 79 },
+]
+
+const demoAnalysis = {
   taskNo: 'AN-20260812-001',
   productName: '手搖飲展店分析',
   businessCode: '餐飲',
@@ -27,69 +34,79 @@ const baseAnalysis = computed(() => ({
   selectedDayType: 'WEEKDAY',
   selectedTimeSlot: 'AFTERNOON',
   selectedAgeGroup: '25-34',
-  ...props.analysis,
-}))
+  metricClusters: demoMetricClusters,
+}
 
-const lifeCircles = [
-  {
-    id: 'zhongxiao',
-    name: '忠孝復興生活圈',
-    score: 91,
-    status: '建議優先',
-    competition: '中高',
-    businessScore: 86,
-    populationScore: 94,
-    trafficScore: 90,
-    radius: '約 800 公尺',
-    headline: '高人流、高曝光，適合外帶型與品牌展示型門市。',
-    summary: '位於捷運交會與商辦聚集區，下午至傍晚人流穩定，目標年齡層集中。',
-    position: { left: '30%', top: '38%' },
-  },
-  {
-    id: 'shida',
-    name: '師大商圈北側',
-    score: 84,
-    status: '值得比較',
-    competition: '中',
-    businessScore: 78,
-    populationScore: 92,
-    trafficScore: 73,
-    radius: '約 650 公尺',
-    headline: '年輕客群集中，適合高辨識度與高翻桌率品項。',
-    summary: '以校園、住宅與巷弄商業為主，年輕客群占比高，晚間與假日仍具消費潛力。',
-    position: { left: '58%', top: '44%' },
-  },
-  {
-    id: 'daanpark',
-    name: '大安森林公園西側',
-    score: 76,
-    status: '可觀察',
-    competition: '低',
-    businessScore: 70,
-    populationScore: 81,
-    trafficScore: 82,
-    radius: '約 700 公尺',
-    headline: '生活客群穩定，適合社區型與低競爭壓力策略。',
-    summary: '以住宅、休憩與日常採買動線為主，競品壓力較低但尖峰人流較分散。',
-    position: { left: '45%', top: '68%' },
-  },
-  {
-    id: 'xinyi',
-    name: '信義安和站周邊',
-    score: 73,
-    status: '備選',
-    competition: '中',
-    businessScore: 74,
-    populationScore: 76,
-    trafficScore: 79,
-    radius: '約 600 公尺',
-    headline: '商辦與住宅混合，適合作為中小型展店備選。',
-    summary: '消費力穩定但人流高峰較短，需搭配明確商品差異化。',
-    position: { left: '70%', top: '62%' },
-  },
-]
+const baseAnalysis = computed(() => {
+  if (!props.analysis) return demoAnalysis
 
-const activeCircle = computed(() => lifeCircles.find((circle) => circle.id === activeCircleId.value) || lifeCircles[0])
+  return {
+    ...demoAnalysis,
+    ...props.analysis,
+    metricClusters: props.analysis.metricClusters || [],
+  }
+})
+
+const toScore = (value) => {
+  const score = Number(value)
+  return Number.isFinite(score) ? Math.round(score) : 0
+}
+
+const flattenCoordinates = (coordinates = []) =>
+  coordinates.flat(Number.isFinite(coordinates?.[0]?.[0]) ? 0 : Infinity)
+
+const getGeometryCenter = (geom) => {
+  const coordinates = flattenCoordinates(geom?.coordinates)
+  const points = []
+
+  for (let index = 0; index < coordinates.length; index += 2) {
+    const longitude = Number(coordinates[index])
+    const latitude = Number(coordinates[index + 1])
+    if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+      points.push([longitude, latitude])
+    }
+  }
+
+  if (!points.length) return null
+
+  const longitude = points.reduce((sum, point) => sum + point[0], 0) / points.length
+  const latitude = points.reduce((sum, point) => sum + point[1], 0) / points.length
+  return { longitude, latitude }
+}
+
+const metricClusters = computed(() =>
+  (baseAnalysis.value.metricClusters || []).map((cluster, index) => {
+    const score = toScore(cluster.compositeScore)
+    const center = getGeometryCenter(cluster.geom)
+    const fallbackPositions = [
+      { left: '30%', top: '38%' },
+      { left: '58%', top: '44%' },
+      { left: '45%', top: '68%' },
+      { left: '70%', top: '62%' },
+    ]
+
+    return {
+      ...cluster,
+      uiId: cluster.id ?? `cluster-${index + 1}`,
+      name: `生活圈 ${index + 1}`,
+      score,
+      status: score >= 88 ? '建議優先' : score >= 80 ? '值得比較' : score >= 74 ? '可觀察' : '備選',
+      competition: score >= 88 ? '中高' : score >= 80 ? '中' : '低',
+      radius: baseAnalysis.value.rangeSize ? `約 ${baseAnalysis.value.rangeSize} 公尺` : '-',
+      headline: `商業 ${toScore(cluster.businessScore)}、客群 ${toScore(cluster.populationScore)}、交通 ${toScore(cluster.trafficScore)}`,
+      summary: center
+        ? `生活圈中心約在 ${center.latitude.toFixed(4)}, ${center.longitude.toFixed(4)}，可搭配地圖範圍檢視周邊條件。`
+        : '已取得生活圈範圍，可搭配地圖檢視周邊條件。',
+      position: fallbackPositions[index % fallbackPositions.length],
+      center,
+    }
+  }),
+)
+
+const activeCluster = computed(() => {
+  const selectedId = activeClusterId.value ?? metricClusters.value[0]?.uiId
+  return metricClusters.value.find((cluster) => cluster.uiId === selectedId) || metricClusters.value[0]
+})
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -137,7 +154,7 @@ const formatLocation = (analysis) => [analysis.countyName, analysis.townName].fi
         <div class="page-title detail-page-title">
           <div>
             <h2>{{ baseAnalysis.productName }}</h2>
-            <p>{{ formatLocation(baseAnalysis) }}，共找到 {{ lifeCircles.length }} 個生活圈可比較。</p>
+            <p>{{ formatLocation(baseAnalysis) }}，共找到 {{ metricClusters.length }} 個生活圈可比較。</p>
           </div>
 
           <div class="detail-title-meta">
@@ -193,37 +210,38 @@ const formatLocation = (analysis) => [analysis.countyName, analysis.townName].fi
             </button>
           </div>
 
-          <div v-show="isMapOpen">
+          <div v-show="isMapOpen && metricClusters.length">
             <div class="detail-map cluster-visual-map">
               <div class="map-grid-lines"></div>
               <div class="life-road road-a"></div>
               <div class="life-road road-b"></div>
               <button
-                v-for="circle in lifeCircles"
-                :key="circle.id"
+                v-for="cluster in metricClusters"
+                :key="cluster.uiId"
                 class="map-marker"
-                :class="{ active: activeCircle.id === circle.id }"
-                :style="{ left: circle.position.left, top: circle.position.top }"
+                :class="{ active: activeCluster?.uiId === cluster.uiId }"
+                :style="{ left: cluster.position.left, top: cluster.position.top }"
                 type="button"
-                @click="activeCircleId = circle.id"
+                @click="activeClusterId = cluster.uiId"
               >
-                <span>{{ circle.name }}</span>
-                <strong>{{ circle.score }}</strong>
+                <span>{{ cluster.name }}</span>
+                <strong>{{ cluster.score }}</strong>
               </button>
             </div>
 
             <div class="selected-cluster-summary">
               <div>
                 <span class="sub">目前選取</span>
-                <strong>{{ activeCircle.name }}</strong>
-                <p>{{ activeCircle.summary }}</p>
+                <strong>{{ activeCluster?.name }}</strong>
+                <p>{{ activeCluster?.summary }}</p>
               </div>
               <div class="selected-cluster-meta">
-                <span class="badge type">{{ activeCircle.status }}</span>
-                <span class="pill">分數 {{ activeCircle.score }}</span>
+                <span class="badge type">{{ activeCluster?.status }}</span>
+                <span class="pill">分數 {{ activeCluster?.score }}</span>
               </div>
             </div>
           </div>
+          <div v-show="isMapOpen && !metricClusters.length" class="empty-cell">目前沒有生活圈資料。</div>
         </section>
 
         <section class="section cluster-table-section">
@@ -248,21 +266,27 @@ const formatLocation = (analysis) => [analysis.countyName, analysis.townName].fi
                 </tr>
               </thead>
               <tbody>
+                <tr v-if="!metricClusters.length">
+                  <td colspan="9" class="empty-cell">目前沒有生活圈資料。</td>
+                </tr>
                 <tr
-                  v-for="circle in lifeCircles"
-                  :key="circle.id"
-                  :class="{ 'active-row': activeCircle.id === circle.id }"
-                  @click="activeCircleId = circle.id"
+                  v-for="cluster in metricClusters"
+                  :key="cluster.uiId"
+                  :class="{ 'active-row': activeCluster?.uiId === cluster.uiId }"
+                  @click="activeClusterId = cluster.uiId"
                 >
-                  <td><span class="case-id">{{ circle.name }}</span></td>
-                  <td>{{ circle.score }}</td>
-                  <td><span class="badge type">{{ circle.status }}</span></td>
-                  <td>{{ circle.radius }}</td>
-                  <td>{{ circle.businessScore }}</td>
-                  <td>{{ circle.populationScore }}</td>
-                  <td>{{ circle.trafficScore }}</td>
-                  <td>{{ circle.competition }}</td>
-                  <td>{{ circle.headline }}</td>
+                  <td>
+                    <span class="case-id">{{ cluster.name }}</span>
+                    <span class="sub">ID：{{ cluster.id || '-' }}</span>
+                  </td>
+                  <td>{{ cluster.score }}</td>
+                  <td><span class="badge type">{{ cluster.status }}</span></td>
+                  <td>{{ cluster.radius }}</td>
+                  <td>{{ toScore(cluster.businessScore) }}</td>
+                  <td>{{ toScore(cluster.populationScore) }}</td>
+                  <td>{{ toScore(cluster.trafficScore) }}</td>
+                  <td>{{ cluster.competition }}</td>
+                  <td>{{ cluster.headline }}</td>
                 </tr>
               </tbody>
             </table>

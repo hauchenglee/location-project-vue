@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
-import CreateCaseView from '@/views/CreateCaseView.vue'
-import CaseRecordsView from '@/views/CaseRecordsView.vue'
+import AnalysisSubmitView from '@/views/AnalysisSubmitView.vue'
+import AnalysisListView from '@/views/AnalysisListView.vue'
 import AnalysisDetailView from '@/views/AnalysisDetailView.vue'
 
 const activePage = ref('create')
@@ -27,8 +27,8 @@ const openAnalysisDetail = (analysis) => {
   <div class="page">
     <div class="app">
       <AppHeader :active-page="headerActivePage" @navigate="navigate" />
-      <CreateCaseView v-if="activePage === 'create'" />
-      <CaseRecordsView v-else-if="activePage === 'records'" @view-detail="openAnalysisDetail" />
+      <AnalysisSubmitView v-if="activePage === 'create'" />
+      <AnalysisListView v-else-if="activePage === 'records'" @view-detail="openAnalysisDetail" />
       <AnalysisDetailView v-else :analysis="selectedAnalysis" @back="navigate('records')" />
     </div>
   </div>

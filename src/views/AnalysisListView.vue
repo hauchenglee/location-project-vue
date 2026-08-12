@@ -25,6 +25,11 @@ const demoAnalyses = [
     selectedDayType: 'WEEKDAY',
     selectedTimeSlot: 'AFTERNOON',
     selectedAgeGroup: '25-34',
+    metricClusters: [
+      { id: 501, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.539, 25.029], [121.548, 25.029], [121.548, 25.023], [121.539, 25.023], [121.539, 25.029]]] }, compositeScore: 91, businessScore: 86, populationScore: 94, trafficScore: 90 },
+      { id: 502, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.528, 25.026], [121.536, 25.026], [121.536, 25.019], [121.528, 25.019], [121.528, 25.026]]] }, compositeScore: 84, businessScore: 78, populationScore: 92, trafficScore: 73 },
+      { id: 503, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.532, 25.035], [121.541, 25.035], [121.541, 25.028], [121.532, 25.028], [121.532, 25.035]]] }, compositeScore: 76, businessScore: 70, populationScore: 81, trafficScore: 82 },
+    ],
   },
   {
     id: 1002,
@@ -42,6 +47,10 @@ const demoAnalyses = [
     selectedDayType: 'WEEKDAY',
     selectedTimeSlot: 'MORNING',
     selectedAgeGroup: '35-44',
+    metricClusters: [
+      { id: 601, analysisId: 1002, geom: { type: 'Polygon', coordinates: [[[121.456, 25.014], [121.464, 25.014], [121.464, 25.008], [121.456, 25.008], [121.456, 25.014]]] }, compositeScore: 88, businessScore: 81, populationScore: 90, trafficScore: 85 },
+      { id: 602, analysisId: 1002, geom: { type: 'Polygon', coordinates: [[[121.45, 25.012], [121.457, 25.012], [121.457, 25.006], [121.45, 25.006], [121.45, 25.012]]] }, compositeScore: 80, businessScore: 75, populationScore: 84, trafficScore: 78 },
+    ],
   },
   {
     id: 1003,
@@ -59,6 +68,10 @@ const demoAnalyses = [
     selectedDayType: 'ALL',
     selectedTimeSlot: 'ALL',
     selectedAgeGroup: 'ALL',
+    metricClusters: [
+      { id: 701, analysisId: 1003, geom: { type: 'Polygon', coordinates: [[[120.636, 24.182], [120.645, 24.182], [120.645, 24.176], [120.636, 24.176], [120.636, 24.182]]] }, compositeScore: 79, businessScore: 82, populationScore: 76, trafficScore: 80 },
+      { id: 702, analysisId: 1003, geom: { type: 'Polygon', coordinates: [[[120.629, 24.181], [120.638, 24.181], [120.638, 24.174], [120.629, 24.174], [120.629, 24.181]]] }, compositeScore: 72, businessScore: 74, populationScore: 70, trafficScore: 71 },
+    ],
   },
 ]
 
@@ -135,6 +148,12 @@ const formatLocation = (item) => {
 const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
 const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
 const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
+
+const clusterCount = (item) => item.metricClusters?.length || 0
+const topClusterScore = (item) => {
+  const scores = item.metricClusters?.map((cluster) => Number(cluster.compositeScore)).filter(Number.isFinite) || []
+  return scores.length ? Math.max(...scores) : '-'
+}
 
 const loadCases = async () => {
   isLoading.value = true
@@ -242,6 +261,7 @@ onMounted(loadCases)
                   <th>經緯度</th>
                   <th>範圍 / 偏好</th>
                   <th>情境條件</th>
+                  <th>生活圈</th>
                   <th>建立時間</th>
                   <th>狀態</th>
                   <th>操作</th>
@@ -249,7 +269,7 @@ onMounted(loadCases)
               </thead>
               <tbody>
                 <tr v-if="!isLoading && !filteredAnalyses.length">
-                  <td colspan="9" class="empty-cell">目前沒有符合條件的分析資料。</td>
+                  <td colspan="10" class="empty-cell">目前沒有符合條件的分析資料。</td>
                 </tr>
                 <tr v-for="analysis in filteredAnalyses" :key="analysis.id || analysis.taskNo">
                   <td>
@@ -275,6 +295,10 @@ onMounted(loadCases)
                   <td>
                     {{ formatDayType(analysis.selectedDayType) }} / {{ formatTimeSlot(analysis.selectedTimeSlot) }}
                     <span class="sub">年齡層：{{ formatAgeGroup(analysis.selectedAgeGroup) }}</span>
+                  </td>
+                  <td>
+                    {{ clusterCount(analysis) }} 個
+                    <span class="sub">最高分：{{ topClusterScore(analysis) }}</span>
                   </td>
                   <td>{{ formatDateTime(analysis.createTime) }}</td>
                   <td>

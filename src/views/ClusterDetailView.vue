@@ -85,17 +85,15 @@ onMounted(loadClusterDetail)
   <main class="main detail-layout">
     <div class="content-scroll">
       <div class="content-shell">
-        <div class="detail-backbar">
-          <button class="btn-sm primary back-link" type="button" @click="emit('back')">
-            <span aria-hidden="true">‹</span>
-            返回分析詳情
-          </button>
-        </div>
-
         <section class="section cluster-detail-shell">
-          <div class="cluster-detail-header">
-            <div>
-              <h2>{{ clusterTitle }}</h2>
+          <div class="detail-hero cluster-detail-header">
+            <div class="detail-hero-main">
+              <div class="detail-title-row">
+                <button class="detail-back-button" type="button" aria-label="返回分析詳情" @click="emit('back')">
+                  <span aria-hidden="true">‹</span>
+                </button>
+                <h2>{{ clusterTitle }}</h2>
+              </div>
               <p>Analysis #{{ analysisId || '-' }} / Cluster #{{ clusterId || '-' }}</p>
 
               <div class="cluster-metric-strip">

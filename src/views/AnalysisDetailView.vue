@@ -114,16 +114,14 @@ onMounted(loadAnalysisDetail)
   <main class="main detail-layout">
     <div class="content-scroll">
       <div class="content-shell">
-        <div class="detail-backbar">
-          <button class="btn-sm primary back-link" type="button" @click="emit('back')">
-            <span aria-hidden="true">‹</span>
-            返回分析列表
-          </button>
-        </div>
-
-        <div class="page-title detail-page-title">
-          <div>
-            <h2>{{ baseAnalysis.productName || '分析詳情' }}</h2>
+        <div class="detail-hero">
+          <div class="detail-hero-main">
+            <div class="detail-title-row">
+              <button class="detail-back-button" type="button" aria-label="返回分析列表" @click="emit('back')">
+                <span aria-hidden="true">‹</span>
+              </button>
+              <h2>{{ baseAnalysis.productName || '分析詳情' }}</h2>
+            </div>
             <p>{{ formatLocation(baseAnalysis) }}，共找到 {{ metricClusters.length }} 個生活圈可比較。</p>
           </div>
 

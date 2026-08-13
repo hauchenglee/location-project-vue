@@ -1,79 +1,56 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { caseApi } from '@/services/caseApi'
 
 const props = defineProps({
-  analysis: {
-    type: Object,
+  analysisId: {
+    type: [Number, String],
     default: null,
   },
 })
 
 const emit = defineEmits(['back'])
 
-const isParameterOpen = ref(true)
-const isMapOpen = ref(true)
+const isParameterOpen = ref(false)
 const activeClusterId = ref(null)
+const detailAnalysis = ref(null)
+const isLoading = ref(false)
+const loadError = ref('')
 
-const baseAnalysis = computed(() => props.analysis || {})
+const baseAnalysis = computed(() => detailAnalysis.value || {})
+
+const loadAnalysisDetail = async () => {
+  if (!props.analysisId) {
+    detailAnalysis.value = null
+    loadError.value = '缺少分析案件編號，無法取得詳情。'
+    return
+  }
+
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    detailAnalysis.value = await caseApi.getAnalysis({ id: props.analysisId })
+  } catch (error) {
+    loadError.value = error?.response?.data?.message || error.message || '取得分析詳情失敗'
+    detailAnalysis.value = null
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const toScore = (value) => {
   const score = Number(value)
   return Number.isFinite(score) ? Math.round(score) : 0
 }
 
-const collectCoordinatePairs = (coordinates, pairs = []) => {
-  if (!Array.isArray(coordinates)) return pairs
-
-  const longitude = Number(coordinates[0])
-  const latitude = Number(coordinates[1])
-
-  if (coordinates.length >= 2 && Number.isFinite(longitude) && Number.isFinite(latitude)) {
-    pairs.push([longitude, latitude])
-    return pairs
-  }
-
-  coordinates.forEach((item) => collectCoordinatePairs(item, pairs))
-  return pairs
-}
-
-const getGeometryCenter = (geom) => {
-  const points = collectCoordinatePairs(geom?.coordinates)
-
-  if (!points.length) return null
-
-  const longitude = points.reduce((sum, point) => sum + point[0], 0) / points.length
-  const latitude = points.reduce((sum, point) => sum + point[1], 0) / points.length
-  return { longitude, latitude }
-}
-
-const normalizeAxis = (value, min, max, start, end) => {
-  if (max === min) return (start + end) / 2
-  return start + ((value - min) / (max - min)) * (end - start)
-}
-
-const normalizePosition = (center, bounds) => ({
-  left: `${normalizeAxis(center.longitude, bounds.minLongitude, bounds.maxLongitude, 24, 76)}%`,
-  top: `${normalizeAxis(center.latitude, bounds.maxLatitude, bounds.minLatitude, 22, 78)}%`,
-})
-
 const analysisRadius = computed(() => baseAnalysis.value.radius ?? null)
 
 const metricClusters = computed(() => {
   const clusters = baseAnalysis.value.metricClusters || []
-  const centers = clusters.map((cluster) => getGeometryCenter(cluster.geom))
-  const validCenters = centers.filter(Boolean)
-  const bounds = validCenters.length
-    ? {
-        minLongitude: Math.min(...validCenters.map((center) => center.longitude)),
-        maxLongitude: Math.max(...validCenters.map((center) => center.longitude)),
-        minLatitude: Math.min(...validCenters.map((center) => center.latitude)),
-        maxLatitude: Math.max(...validCenters.map((center) => center.latitude)),
-      }
-    : null
 
   return clusters.map((cluster, index) => {
     const score = toScore(cluster.compositeScore)
-    const center = centers[index]
 
     return {
       ...cluster,
@@ -84,16 +61,9 @@ const metricClusters = computed(() => {
       competition: score >= 88 ? '中高' : score >= 80 ? '中' : '低',
       radius: analysisRadius.value ? `約 ${analysisRadius.value} 公尺` : '-',
       headline: `商業 ${toScore(cluster.businessScore)}、客群 ${toScore(cluster.populationScore)}、交通 ${toScore(cluster.trafficScore)}`,
-      summary: center
-        ? `生活圈中心約在 ${center.latitude.toFixed(4)}, ${center.longitude.toFixed(4)}，可搭配地圖範圍檢視周邊條件。`
-        : '目前尚未取得可視化範圍資料。',
-      position: center && bounds ? normalizePosition(center, bounds) : null,
-      center,
     }
   })
 })
-
-const mapClusters = computed(() => metricClusters.value.filter((cluster) => cluster.position))
 
 const activeCluster = computed(() => {
   const selectedId = activeClusterId.value ?? metricClusters.value[0]?.uiId
@@ -129,7 +99,21 @@ const formatDateTime = (value) => {
   return String(value).replace('T', ' ')
 }
 
-const formatLocation = (analysis) => [analysis.countyName, analysis.townName].filter(Boolean).join(' / ') || '-'
+const formatLocation = (analysis) => {
+  const district = [analysis.countyName, analysis.townName].filter(Boolean).join(' / ')
+  const coordinate = [analysis.latitude, analysis.longitude]
+    .filter((value) => value !== null && value !== undefined && value !== '')
+    .join(', ')
+
+  return district || coordinate || '-'
+}
+
+watch(() => props.analysisId, () => {
+  activeClusterId.value = null
+  loadAnalysisDetail()
+})
+
+onMounted(loadAnalysisDetail)
 </script>
 
 <template>
@@ -155,6 +139,9 @@ const formatLocation = (analysis) => [analysis.countyName, analysis.townName].fi
             <span>{{ formatDateTime(baseAnalysis.createTime) }}</span>
           </div>
         </div>
+
+        <div v-if="isLoading" class="form-message">正在取得分析詳情...</div>
+        <div v-if="loadError" class="form-message error">{{ loadError }}</div>
 
         <section class="section parameter-section">
           <div class="section-header parameter-header">
@@ -189,51 +176,6 @@ const formatLocation = (analysis) => [analysis.countyName, analysis.townName].fi
               <div>{{ ageGroupLabelMap[baseAnalysis.selectedAgeGroup] || baseAnalysis.selectedAgeGroup || '-' }}</div>
             </div>
           </div>
-        </section>
-
-        <section class="section cluster-map-section">
-          <div class="section-header parameter-header">
-            <div>
-              <h3>生活圈分布</h3>
-              <p>點選地圖上的生活圈，可同步切換下方列表選取狀態。</p>
-            </div>
-            <button class="btn-sm" type="button" @click="isMapOpen = !isMapOpen">
-              {{ isMapOpen ? '收合' : '展開' }}
-            </button>
-          </div>
-
-          <div v-show="isMapOpen && mapClusters.length">
-            <div class="detail-map cluster-visual-map">
-              <div class="map-grid-lines"></div>
-              <div class="life-road road-a"></div>
-              <div class="life-road road-b"></div>
-              <button
-                v-for="cluster in mapClusters"
-                :key="cluster.uiId"
-                class="map-marker"
-                :class="{ active: activeCluster?.uiId === cluster.uiId }"
-                :style="{ left: cluster.position.left, top: cluster.position.top }"
-                type="button"
-                @click="activeClusterId = cluster.uiId"
-              >
-                <span>{{ cluster.name }}</span>
-                <strong>{{ cluster.score }}</strong>
-              </button>
-            </div>
-
-            <div class="selected-cluster-summary">
-              <div>
-                <span class="sub">目前選取</span>
-                <strong>{{ activeCluster?.name }}</strong>
-                <p>{{ activeCluster?.summary }}</p>
-              </div>
-              <div class="selected-cluster-meta">
-                <span class="badge type">{{ activeCluster?.status }}</span>
-                <span class="pill">分數 {{ activeCluster?.score }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-show="isMapOpen && !mapClusters.length" class="empty-cell">目前沒有可視化範圍資料。</div>
         </section>
 
         <section class="section cluster-table-section">

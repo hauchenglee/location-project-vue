@@ -10,7 +10,7 @@ const apiClient = axios.create({
 const unwrapResponse = (response) => {
   const body = response.data
 
-  if (body?.code && body.code !== '200') {
+  if (body?.code && String(body.code) !== '200') {
     throw new Error(body.message || 'API request failed')
   }
 
@@ -21,6 +21,11 @@ export const caseApi = {
   async listAnalyses() {
     const response = await apiClient.post('/api/analysis/list')
     return unwrapResponse(response) || []
+  },
+
+  async getAnalysis(payload) {
+    const response = await apiClient.post('/api/analysis/get', payload)
+    return unwrapResponse(response)
   },
 
   async submitAnalysis(payload) {

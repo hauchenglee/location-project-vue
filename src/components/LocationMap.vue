@@ -29,9 +29,6 @@ let circle
 const defaultCenter = [25.033, 121.5654]
 const districtCenter = [25.0262, 121.5435]
 
-const mapHint = computed(() => '')
-const mapBadge = computed(() => '')
-
 const currentCenter = computed(() => {
   const lat = Number.parseFloat(props.lat)
   const lng = Number.parseFloat(props.lng)
@@ -112,9 +109,7 @@ onBeforeUnmount(() => {
     <div class="map-top">
       <div class="map-top-left">
         <h3>地圖定位區</h3>
-        <span>{{ mapHint }}</span>
       </div>
-      <span class="map-badge">{{ mapBadge }}</span>
     </div>
 
     <div ref="mapEl" class="map-stage leaflet-stage" aria-label="OpenStreetMap 地圖定位區"></div>

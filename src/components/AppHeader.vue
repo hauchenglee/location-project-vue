@@ -20,7 +20,7 @@ const tabs = [
       <div class="brand-mark">L</div>
       <div class="brand-text">
         <h1>區位分析案件系統</h1>
-        <p>Glassmorphism Workspace</p>
+        <p>Location Analysis</p>
       </div>
     </div>
 
@@ -43,9 +43,9 @@ const tabs = [
       </button>
 
       <button class="user-btn" type="button" aria-label="使用者帳號">
-        <span class="avatar">CH</span>
+        <span class="avatar">管</span>
         <span class="user-meta">
-          <strong>Chris Huang</strong>
+          <strong>系統管理員</strong>
           <span>Admin</span>
         </span>
         <span class="chev"></span>

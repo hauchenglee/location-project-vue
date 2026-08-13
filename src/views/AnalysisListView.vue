@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 
 const emit = defineEmits(['view-detail'])
@@ -119,7 +120,7 @@ onMounted(loadCases)
 <template>
   <main class="main records-layout">
     <div class="content-scroll">
-      <div class="content-shell">
+        <div class="content-shell">
           <div class="page-title">
             <h2>分析列表</h2>
           <p>透過查詢條件快速篩選分析任務，並從列表進入分析總覽與生活圈比較。</p>
@@ -185,7 +186,7 @@ onMounted(loadCases)
             </div>
           </div>
 
-          <div class="table-wrap">
+          <div class="table-wrap interactive-table">
             <table>
               <thead>
                 <tr>
@@ -205,7 +206,13 @@ onMounted(loadCases)
                 <tr v-if="!isLoading && !filteredAnalyses.length">
                   <td colspan="10" class="empty-cell">目前沒有符合條件的分析資料。</td>
                 </tr>
-                <tr v-for="analysis in filteredAnalyses" :key="analysis.id || analysis.taskNo">
+                <tr
+                  v-for="analysis in filteredAnalyses"
+                  :key="analysis.id || analysis.taskNo"
+                  tabindex="0"
+                  @click="emit('view-detail', analysis)"
+                  @keydown.enter="emit('view-detail', analysis)"
+                >
                   <td>
                     <span class="case-id">{{ analysis.taskNo || '-' }}</span>
                     <span class="sub">系統編號：{{ analysis.id || '-' }}</span>
@@ -241,7 +248,7 @@ onMounted(loadCases)
                     </span>
                   </td>
                   <td>
-                    <button class="btn-sm primary" type="button" @click="emit('view-detail', analysis)">
+                    <button class="btn-sm primary" type="button" @click.stop="emit('view-detail', analysis)">
                       查看分析
                     </button>
                   </td>
@@ -259,6 +266,12 @@ onMounted(loadCases)
             </div>
           </div>
         </section>
+
+        <PageLoading
+          v-if="isLoading"
+          title="正在取得分析列表"
+          description="系統正在載入分析案件與生活圈摘要。"
+        />
       </div>
     </div>
   </main>

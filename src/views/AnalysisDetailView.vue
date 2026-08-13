@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 
 const props = defineProps({
@@ -9,10 +10,9 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['back'])
+const emit = defineEmits(['back', 'view-cluster'])
 
 const isParameterOpen = ref(false)
-const activeClusterId = ref(null)
 const detailAnalysis = ref(null)
 const isLoading = ref(false)
 const loadError = ref('')
@@ -60,14 +60,9 @@ const metricClusters = computed(() => {
       status: score >= 88 ? '建議優先' : score >= 80 ? '值得比較' : score >= 74 ? '可觀察' : '備選',
       competition: score >= 88 ? '中高' : score >= 80 ? '中' : '低',
       radius: analysisRadius.value ? `約 ${analysisRadius.value} 公尺` : '-',
-      headline: `商業 ${toScore(cluster.businessScore)}、客群 ${toScore(cluster.populationScore)}、交通 ${toScore(cluster.trafficScore)}`,
+      headline: `商業 ${toScore(cluster.businessScore)}、客群 ${toScore(cluster.populationScore)}、Transit ${toScore(cluster.transitScore)}`,
     }
   })
-})
-
-const activeCluster = computed(() => {
-  const selectedId = activeClusterId.value ?? metricClusters.value[0]?.uiId
-  return metricClusters.value.find((cluster) => cluster.uiId === selectedId) || metricClusters.value[0] || null
 })
 
 const statusLabelMap = {
@@ -109,7 +104,6 @@ const formatLocation = (analysis) => {
 }
 
 watch(() => props.analysisId, () => {
-  activeClusterId.value = null
   loadAnalysisDetail()
 })
 
@@ -140,7 +134,6 @@ onMounted(loadAnalysisDetail)
           </div>
         </div>
 
-        <div v-if="isLoading" class="form-message">正在取得分析詳情...</div>
         <div v-if="loadError" class="form-message error">{{ loadError }}</div>
 
         <section class="section parameter-section">
@@ -184,7 +177,7 @@ onMounted(loadAnalysisDetail)
             <p>基本名稱、分數、狀態與重點摘要，可橫向捲動查看完整欄位。</p>
           </div>
 
-          <div class="table-wrap cluster-scroll-table">
+          <div class="table-wrap cluster-scroll-table interactive-table">
             <table>
               <thead>
                 <tr>
@@ -194,20 +187,22 @@ onMounted(loadAnalysisDetail)
                   <th>範圍</th>
                   <th>商業</th>
                   <th>客群</th>
-                  <th>交通</th>
+                  <th>Transit</th>
                   <th>競爭</th>
                   <th>摘要</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!metricClusters.length">
-                  <td colspan="9" class="empty-cell">目前沒有生活圈資料。</td>
+                  <td colspan="10" class="empty-cell">目前沒有生活圈資料。</td>
                 </tr>
                 <tr
                   v-for="cluster in metricClusters"
                   :key="cluster.uiId"
-                  :class="{ 'active-row': activeCluster?.uiId === cluster.uiId }"
-                  @click="activeClusterId = cluster.uiId"
+                  tabindex="0"
+                  @click="emit('view-cluster', cluster)"
+                  @keydown.enter="emit('view-cluster', cluster)"
                 >
                   <td>
                     <span class="case-id">{{ cluster.name }}</span>
@@ -218,14 +213,25 @@ onMounted(loadAnalysisDetail)
                   <td>{{ cluster.radius }}</td>
                   <td>{{ toScore(cluster.businessScore) }}</td>
                   <td>{{ toScore(cluster.populationScore) }}</td>
-                  <td>{{ toScore(cluster.trafficScore) }}</td>
+                  <td>{{ toScore(cluster.transitScore) }}</td>
                   <td>{{ cluster.competition }}</td>
                   <td>{{ cluster.headline }}</td>
+                  <td>
+                    <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', cluster)">
+                      查看詳情
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </section>
+
+        <PageLoading
+          v-if="isLoading"
+          title="正在取得分析詳情"
+          description="系統正在載入分析參數與生活圈列表。"
+        />
       </div>
     </div>
   </main>

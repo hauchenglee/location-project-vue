@@ -28,6 +28,11 @@ export const caseApi = {
     return unwrapResponse(response)
   },
 
+  async getCluster(payload) {
+    const response = await apiClient.post('/api/cluster/get', payload)
+    return unwrapResponse(response)
+  },
+
   async submitAnalysis(payload) {
     const response = await apiClient.post('/api/analysis/submit', payload)
     return unwrapResponse(response)

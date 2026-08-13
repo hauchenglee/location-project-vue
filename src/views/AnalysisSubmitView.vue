@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import LocationMap from '@/components/LocationMap.vue'
+import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 
 const isSubmitting = ref(false)
@@ -265,5 +266,11 @@ const submitAnalysis = async () => {
         />
       </div>
     </aside>
+
+    <PageLoading
+      v-if="isSubmitting"
+      title="正在提交分析"
+      description="系統正在建立案件並啟動分析流程。"
+    />
   </main>
 </template>

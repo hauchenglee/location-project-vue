@@ -16,7 +16,7 @@ const initialForm = {
   townName: '',
   longitude: '',
   latitude: '',
-  rangeSize: 500,
+  radius: 500,
   preference: '0.5',
   selectedDayType: 'ALL',
   selectedTimeSlot: 'ALL',
@@ -25,7 +25,7 @@ const initialForm = {
 
 const form = reactive({ ...initialForm })
 
-const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 500))
+const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 500))
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -50,7 +50,7 @@ const createPayload = () => ({
   townName: form.locationMode === 'district' ? form.townName || null : null,
   longitude: form.locationMode === 'pin' && form.longitude !== '' ? Number(form.longitude) : null,
   latitude: form.locationMode === 'pin' && form.latitude !== '' ? Number(form.latitude) : null,
-  rangeSize: rangeSize.value,
+  radius: form.locationMode === 'pin' ? radius.value : null,
   preference: form.preference,
   selectedDayType: form.selectedDayType,
   selectedTimeSlot: form.selectedTimeSlot,
@@ -177,13 +177,13 @@ const submitAnalysis = async () => {
                     <input id="longitude" v-model="form.longitude" type="number" step="0.0000001" placeholder="例如：121.5654" />
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="field">
-              <label for="rangeSize">分析範圍（公尺）</label>
-              <input id="rangeSize" v-model="form.rangeSize" type="number" min="500" step="100" />
-              <div class="field-note">建議至少 500 公尺，範圍越大會納入越多周邊資料。</div>
+                <div class="field">
+                  <label for="radius">分析範圍（公尺）</label>
+                  <input id="radius" v-model="form.radius" type="number" min="500" step="100" />
+                  <div class="field-note">建議至少 500 公尺，範圍越大會納入越多周邊資料。</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -261,7 +261,7 @@ const submitAnalysis = async () => {
           :mode="form.locationMode"
           :lat="form.latitude || '25.0330'"
           :lng="form.longitude || '121.5654'"
-          :radius="rangeSize"
+          :radius="radius"
         />
       </div>
     </aside>

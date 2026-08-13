@@ -8,73 +8,6 @@ const isLoading = ref(false)
 const loadError = ref('')
 const analyses = ref([])
 
-const demoAnalyses = [
-  {
-    id: 1001,
-    taskNo: 'AN-20260812-001',
-    status: 'COMPLETED',
-    createTime: '2026-08-12 08:15:00',
-    productName: '手搖飲展店分析',
-    businessCode: '餐飲',
-    countyName: '台北市',
-    townName: '大安區',
-    longitude: 121.5435,
-    latitude: 25.0262,
-    rangeSize: 800,
-    preference: '0.5',
-    selectedDayType: 'WEEKDAY',
-    selectedTimeSlot: 'AFTERNOON',
-    selectedAgeGroup: '25-34',
-    metricClusters: [
-      { id: 501, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.539, 25.029], [121.548, 25.029], [121.548, 25.023], [121.539, 25.023], [121.539, 25.029]]] }, compositeScore: 91, businessScore: 86, populationScore: 94, trafficScore: 90 },
-      { id: 502, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.528, 25.026], [121.536, 25.026], [121.536, 25.019], [121.528, 25.019], [121.528, 25.026]]] }, compositeScore: 84, businessScore: 78, populationScore: 92, trafficScore: 73 },
-      { id: 503, analysisId: 1001, geom: { type: 'Polygon', coordinates: [[[121.532, 25.035], [121.541, 25.035], [121.541, 25.028], [121.532, 25.028], [121.532, 25.035]]] }, compositeScore: 76, businessScore: 70, populationScore: 81, trafficScore: 82 },
-    ],
-  },
-  {
-    id: 1002,
-    taskNo: 'AN-20260811-014',
-    status: 'COMPLETED',
-    createTime: '2026-08-11 15:42:00',
-    productName: '早餐店商圈評估',
-    businessCode: '餐飲',
-    countyName: '新北市',
-    townName: '板橋區',
-    longitude: 121.4598,
-    latitude: 25.0114,
-    rangeSize: 600,
-    preference: '0.7',
-    selectedDayType: 'WEEKDAY',
-    selectedTimeSlot: 'MORNING',
-    selectedAgeGroup: '35-44',
-    metricClusters: [
-      { id: 601, analysisId: 1002, geom: { type: 'Polygon', coordinates: [[[121.456, 25.014], [121.464, 25.014], [121.464, 25.008], [121.456, 25.008], [121.456, 25.014]]] }, compositeScore: 88, businessScore: 81, populationScore: 90, trafficScore: 85 },
-      { id: 602, analysisId: 1002, geom: { type: 'Polygon', coordinates: [[[121.45, 25.012], [121.457, 25.012], [121.457, 25.006], [121.45, 25.006], [121.45, 25.012]]] }, compositeScore: 80, businessScore: 75, populationScore: 84, trafficScore: 78 },
-    ],
-  },
-  {
-    id: 1003,
-    taskNo: 'AN-20260810-009',
-    status: 'PROCESSING',
-    createTime: '2026-08-10 11:20:00',
-    productName: '藥妝店生活圈分析',
-    businessCode: '零售',
-    countyName: '台中市',
-    townName: '西屯區',
-    longitude: 120.6398,
-    latitude: 24.1793,
-    rangeSize: 1000,
-    preference: '0.3',
-    selectedDayType: 'ALL',
-    selectedTimeSlot: 'ALL',
-    selectedAgeGroup: 'ALL',
-    metricClusters: [
-      { id: 701, analysisId: 1003, geom: { type: 'Polygon', coordinates: [[[120.636, 24.182], [120.645, 24.182], [120.645, 24.176], [120.636, 24.176], [120.636, 24.182]]] }, compositeScore: 79, businessScore: 82, populationScore: 76, trafficScore: 80 },
-      { id: 702, analysisId: 1003, geom: { type: 'Polygon', coordinates: [[[120.629, 24.181], [120.638, 24.181], [120.638, 24.174], [120.629, 24.174], [120.629, 24.181]]] }, compositeScore: 72, businessScore: 74, populationScore: 70, trafficScore: 71 },
-    ],
-  },
-]
-
 const filters = reactive({
   taskNo: '',
   productName: '',
@@ -117,7 +50,7 @@ const ageGroupLabelMap = {
   ALL: '全部年齡',
 }
 
-const analysisItems = computed(() => (analyses.value.length ? analyses.value : demoAnalyses))
+const analysisItems = computed(() => analyses.value)
 
 const filteredAnalyses = computed(() =>
   analysisItems.value.filter((item) => {
@@ -150,6 +83,7 @@ const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
 const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
 
 const clusterCount = (item) => item.metricClusters?.length || 0
+const formatRadius = (item) => item.radius ?? '-'
 const topClusterScore = (item) => {
   const scores = item.metricClusters?.map((cluster) => Number(cluster.compositeScore)).filter(Number.isFinite) || []
   return scores.length ? Math.max(...scores) : '-'
@@ -161,10 +95,10 @@ const loadCases = async () => {
 
   try {
     const data = await caseApi.listAnalyses()
-    analyses.value = data.length ? data : demoAnalyses
+    analyses.value = Array.isArray(data) ? data : []
   } catch (error) {
-    loadError.value = ''
-    analyses.value = demoAnalyses
+    loadError.value = error?.response?.data?.message || error.message || '取得分析列表失敗'
+    analyses.value = []
   } finally {
     isLoading.value = false
   }
@@ -289,7 +223,7 @@ onMounted(loadCases)
                     <span class="sub">經度：{{ analysis.longitude ?? '-' }}</span>
                   </td>
                   <td>
-                    {{ analysis.rangeSize ?? '-' }} 公尺
+                    {{ formatRadius(analysis) }} 公尺
                     <span class="sub">偏好：{{ analysis.preference || '-' }}</span>
                   </td>
                   <td>

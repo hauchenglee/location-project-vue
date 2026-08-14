@@ -147,8 +147,8 @@ onMounted(loadAnalysisDetail)
 
           <div v-show="isParameterOpen" class="grid-4 parameter-grid">
             <div class="field readonly-field">
-              <label>商品類型</label>
-              <div>{{ baseAnalysis.businessCode || '-' }}</div>
+              <label>產業類別</label>
+              <div>{{ baseAnalysis.industryCode || '-' }}</div>
             </div>
             <div class="field readonly-field">
               <label>分析區域</label>

@@ -11,7 +11,7 @@ const submitResult = ref(null)
 const initialForm = {
   taskNo: '',
   productName: '',
-  businessCode: '',
+  industryCode: '',
   locationMode: 'district',
   countyName: '',
   townName: '',
@@ -46,7 +46,7 @@ const resetForm = () => {
 const createPayload = () => ({
   taskNo: form.taskNo || null,
   productName: form.productName,
-  businessCode: form.businessCode,
+  industryCode: form.industryCode,
   countyName: form.locationMode === 'district' ? form.countyName || null : null,
   townName: form.locationMode === 'district' ? form.townName || null : null,
   longitude: form.locationMode === 'pin' && form.longitude !== '' ? Number(form.longitude) : null,
@@ -101,14 +101,14 @@ const submitAnalysis = async () => {
             </div>
 
             <div class="field">
-              <label for="businessCode">商品類型</label>
-              <select id="businessCode" v-model="form.businessCode">
-                <option value="">請選擇商品類型</option>
+              <label for="industryCode">產業類別</label>
+              <select id="industryCode" v-model="form.industryCode">
+                <option value="">請選擇產業類別</option>
                 <option value="餐飲">餐飲</option>
                 <option value="零售">零售</option>
                 <option value="服務">服務</option>
               </select>
-              <div class="field-note">選擇最接近的商品類型，讓分析結果更貼近實際經營情境。</div>
+              <div class="field-note">選擇最接近的產業類別，讓分析結果更貼近實際經營情境。</div>
             </div>
           </div>
 

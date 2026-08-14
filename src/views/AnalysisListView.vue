@@ -12,7 +12,7 @@ const analyses = ref([])
 const filters = reactive({
   taskNo: '',
   productName: '',
-  businessCode: '全部類型',
+  industryCode: '全部類別',
   status: '全部狀態',
 })
 
@@ -57,11 +57,11 @@ const filteredAnalyses = computed(() =>
   analysisItems.value.filter((item) => {
     const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
     const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
-    const matchesBusinessCode =
-      filters.businessCode === '全部類型' || item.businessCode === filters.businessCode
+    const matchesIndustryCode =
+      filters.industryCode === '全部類別' || item.industryCode === filters.industryCode
     const matchesStatus = filters.status === '全部狀態' || item.status === filters.status
 
-    return matchesTaskNo && matchesProductName && matchesBusinessCode && matchesStatus
+    return matchesTaskNo && matchesProductName && matchesIndustryCode && matchesStatus
   }),
 )
 
@@ -109,7 +109,7 @@ const resetFilters = () => {
   Object.assign(filters, {
     taskNo: '',
     productName: '',
-    businessCode: '全部類型',
+    industryCode: '全部類別',
     status: '全部狀態',
   })
 }
@@ -129,7 +129,7 @@ onMounted(loadCases)
         <section class="section">
           <div class="section-header">
             <h3>搜尋條件</h3>
-            <p>可依案件號碼、商品名稱、商品類型與處理狀態進行篩選。</p>
+            <p>可依案件號碼、商品名稱、產業類別與處理狀態進行篩選。</p>
           </div>
 
           <div class="grid-4">
@@ -142,9 +142,9 @@ onMounted(loadCases)
               <input id="productNameFilter" v-model="filters.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
             </div>
             <div class="field">
-              <label for="businessCodeFilter">商品類型</label>
-              <select id="businessCodeFilter" v-model="filters.businessCode">
-                <option>全部類型</option>
+              <label for="industryCodeFilter">產業類別</label>
+              <select id="industryCodeFilter" v-model="filters.industryCode">
+                <option>全部類別</option>
                 <option>餐飲</option>
                 <option>零售</option>
                 <option>服務</option>
@@ -219,7 +219,7 @@ onMounted(loadCases)
                   </td>
                   <td>
                     {{ analysis.productName || '-' }}
-                    <span class="sub">商品類型：{{ analysis.businessCode || '-' }}</span>
+                    <span class="sub">產業類別：{{ analysis.industryCode || '-' }}</span>
                   </td>
                   <td>
                     {{ formatLocation(analysis) }}

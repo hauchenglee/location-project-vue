@@ -54,6 +54,12 @@ const clusterMetrics = computed(() => [
   { key: 'transit', label: '交通', value: toScore(cluster.value?.transitScore) },
 ])
 
+const headerMetrics = computed(() => {
+  const composite = clusterMetrics.value.find((metric) => metric.key === 'composite')
+  const active = clusterMetrics.value.find((metric) => metric.key === activeTab.value)
+  return [composite, active].filter((metric, index, metrics) => metric && metrics.findIndex((item) => item.key === metric.key) === index)
+})
+
 const loadClusterDetail = async () => {
   if (!props.clusterId) {
     cluster.value = null
@@ -108,19 +114,14 @@ onMounted(loadClusterDetail)
                 <h2>{{ clusterTitle }}</h2>
               </div>
               <p>Analysis #{{ analysisId || '-' }} / Cluster #{{ clusterId || '-' }}</p>
-
-              <div class="cluster-metric-strip">
-                <span class="cluster-rating">熱區 <strong>A</strong></span>
-                <span v-for="metric in clusterMetrics" :key="metric.key" class="cluster-metric">
-                  {{ metric.label }}
-                  <strong>{{ metric.value }}</strong>
-                </span>
-              </div>
             </div>
 
-            <div class="detail-title-meta">
-              <span class="badge type">生活圈</span>
-              <strong>ID：{{ clusterId || '-' }}</strong>
+            <div class="cluster-header-summary">
+              <span class="cluster-rating">熱區 <strong>A</strong></span>
+              <span v-for="metric in headerMetrics" :key="metric.key" class="cluster-metric">
+                {{ metric.label }}
+                <strong>{{ metric.value }}</strong>
+              </span>
             </div>
           </div>
 

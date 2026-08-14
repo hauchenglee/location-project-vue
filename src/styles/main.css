@@ -446,6 +446,8 @@ button:disabled {
 }
 
 .cluster-detail-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   margin-bottom: 18px;
 }
 
@@ -463,12 +465,13 @@ button:disabled {
   line-height: 1.7;
 }
 
-.cluster-metric-strip {
+.cluster-header-summary {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 14px;
+  max-width: 520px;
 }
 
 .cluster-rating,
@@ -500,41 +503,54 @@ button:disabled {
 }
 
 .cluster-detail-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin: 18px 0;
-  padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.46);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  gap: 0;
+  margin: 18px 0 20px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .cluster-detail-tab {
-  min-height: 36px;
-  padding: 8px 14px;
+  position: relative;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
   color: #475569;
   cursor: pointer;
   font-size: 13px;
   font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
   transition: 0.2s ease;
 }
 
 .cluster-detail-tab:hover {
-  background: rgba(37, 99, 235, 0.08);
+  background: transparent;
   color: var(--primary-dark);
+  transform: translateY(-3px);
 }
 
 .cluster-detail-tab.active {
-  border-color: rgba(37, 99, 235, 0.18);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(29, 78, 216, 0.1));
+  border-color: transparent;
+  background: transparent;
   color: #1e40af;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  box-shadow: none;
+}
+
+.cluster-detail-tab.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -11px;
+  left: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: #2563eb;
 }
 
 .cluster-panel-empty {
@@ -1043,6 +1059,11 @@ tbody tr:hover {
     align-items: flex-start;
   }
 
+  .cluster-header-summary {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
   .left {
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.5);
@@ -1101,5 +1122,11 @@ tbody tr:hover {
   .actions,
   .pagination {
     justify-content: flex-start;
+  }
+
+  .cluster-detail-tab {
+    padding-right: 4px;
+    padding-left: 4px;
+    font-size: 12px;
   }
 }

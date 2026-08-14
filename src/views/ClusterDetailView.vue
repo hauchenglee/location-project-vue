@@ -23,6 +23,7 @@ const emit = defineEmits(['back'])
 
 const activeTab = ref('business')
 const cluster = ref(null)
+const analysis = ref(null)
 const isLoading = ref(false)
 const loadError = ref('')
 
@@ -56,6 +57,7 @@ const clusterMetrics = computed(() => [
 const loadClusterDetail = async () => {
   if (!props.clusterId) {
     cluster.value = null
+    analysis.value = null
     loadError.value = '缺少生活圈編號，無法取得詳情。'
     return
   }
@@ -64,16 +66,27 @@ const loadClusterDetail = async () => {
   loadError.value = ''
 
   try {
-    cluster.value = await caseApi.getCluster({ id: props.clusterId })
+    const [clusterResult, analysisResult] = await Promise.allSettled([
+      caseApi.getCluster({ id: props.clusterId }),
+      props.analysisId ? caseApi.getAnalysis({ id: props.analysisId }) : Promise.resolve(null),
+    ])
+
+    if (clusterResult.status === 'rejected') {
+      throw clusterResult.reason
+    }
+
+    cluster.value = clusterResult.value
+    analysis.value = analysisResult.status === 'fulfilled' ? analysisResult.value : null
   } catch (error) {
     loadError.value = error?.response?.data?.message || error.message || '取得生活圈詳情失敗'
     cluster.value = null
+    analysis.value = null
   } finally {
     isLoading.value = false
   }
 }
 
-watch(() => props.clusterId, () => {
+watch(() => [props.clusterId, props.analysisId], () => {
   activeTab.value = clusterTabs[0].key
   loadClusterDetail()
 })
@@ -126,7 +139,7 @@ onMounted(loadClusterDetail)
             </button>
           </nav>
 
-          <component :is="activePanel" :cluster="cluster" />
+          <component :is="activePanel" :cluster="cluster" :selected-age-group="analysis?.selectedAgeGroup" />
         </section>
 
         <PageLoading

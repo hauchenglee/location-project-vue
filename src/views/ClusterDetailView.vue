@@ -21,17 +21,17 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-const activeTab = ref('overview')
+const activeTab = ref('business')
 const cluster = ref(null)
 const isLoading = ref(false)
 const loadError = ref('')
 
 const clusterTabs = [
-  { key: 'overview', label: '總覽', component: ClusterDetailOverviewPanel },
-  { key: 'business', label: '商業環境', component: ClusterDetailBusinessPanel },
-  { key: 'population', label: '客群潛力', component: ClusterDetailPopulationPanel },
+  { key: 'business', label: '商業', component: ClusterDetailBusinessPanel },
+  { key: 'population', label: '人口', component: ClusterDetailPopulationPanel },
   { key: 'people', label: '人流表現', component: ClusterDetailPeoplePanel },
-  { key: 'transit', label: 'Transit', component: ClusterDetailTransitPanel },
+  { key: 'transit', label: '交通', component: ClusterDetailTransitPanel },
+  { key: 'overview', label: '總覽', component: ClusterDetailOverviewPanel },
 ]
 
 const activePanel = computed(
@@ -48,9 +48,9 @@ const clusterTitle = computed(() => (cluster.value?.id ? `生活圈 ${cluster.va
 const clusterMetrics = computed(() => [
   { key: 'composite', label: '綜合', value: toScore(cluster.value?.compositeScore) },
   { key: 'business', label: '商業', value: toScore(cluster.value?.businessScore) },
-  { key: 'population', label: '客群', value: toScore(cluster.value?.populationScore) },
+  { key: 'population', label: '人口', value: toScore(cluster.value?.populationScore) },
   { key: 'people', label: '人流', value: toScore(cluster.value?.peopleScore) },
-  { key: 'transit', label: 'Transit', value: toScore(cluster.value?.transitScore) },
+  { key: 'transit', label: '交通', value: toScore(cluster.value?.transitScore) },
 ])
 
 const loadClusterDetail = async () => {
@@ -74,7 +74,7 @@ const loadClusterDetail = async () => {
 }
 
 watch(() => props.clusterId, () => {
-  activeTab.value = 'overview'
+  activeTab.value = clusterTabs[0].key
   loadClusterDetail()
 })
 

@@ -14,6 +14,7 @@ const emit = defineEmits(['back', 'view-cluster'])
 
 const isParameterOpen = ref(false)
 const detailAnalysis = ref(null)
+const clusterScores = ref([])
 const isLoading = ref(false)
 const loadError = ref('')
 
@@ -22,6 +23,7 @@ const baseAnalysis = computed(() => detailAnalysis.value || {})
 const loadAnalysisDetail = async () => {
   if (!props.analysisId) {
     detailAnalysis.value = null
+    clusterScores.value = []
     loadError.value = '缺少分析案件編號，無法取得詳情。'
     return
   }
@@ -30,10 +32,17 @@ const loadAnalysisDetail = async () => {
   loadError.value = ''
 
   try {
-    detailAnalysis.value = await caseApi.getAnalysis({ id: props.analysisId })
+    const [analysis, clusters] = await Promise.all([
+      caseApi.getAnalysis({ id: props.analysisId }),
+      caseApi.listClusterScores({ analysisId: props.analysisId }),
+    ])
+
+    detailAnalysis.value = analysis
+    clusterScores.value = Array.isArray(clusters) ? clusters : []
   } catch (error) {
     loadError.value = error?.response?.data?.message || error.message || '取得分析詳情失敗'
     detailAnalysis.value = null
+    clusterScores.value = []
   } finally {
     isLoading.value = false
   }
@@ -47,7 +56,7 @@ const toScore = (value) => {
 const analysisRadius = computed(() => baseAnalysis.value.radius ?? null)
 
 const metricClusters = computed(() => {
-  const clusters = baseAnalysis.value.metricClusters || []
+  const clusters = clusterScores.value
 
   return clusters.map((cluster, index) => {
     const score = toScore(cluster.compositeScore)
@@ -57,10 +66,6 @@ const metricClusters = computed(() => {
       uiId: cluster.id ?? `cluster-${index + 1}`,
       name: `生活圈 ${index + 1}`,
       score,
-      status: score >= 88 ? '建議優先' : score >= 80 ? '值得比較' : score >= 74 ? '可觀察' : '備選',
-      competition: score >= 88 ? '中高' : score >= 80 ? '中' : '低',
-      radius: analysisRadius.value ? `約 ${analysisRadius.value} 公尺` : '-',
-      headline: `商業 ${toScore(cluster.businessScore)}、客群 ${toScore(cluster.populationScore)}、Transit ${toScore(cluster.transitScore)}`,
     }
   })
 })
@@ -172,7 +177,7 @@ onMounted(loadAnalysisDetail)
         <section class="section cluster-table-section">
           <div class="section-header">
             <h3>生活圈列表</h3>
-            <p>基本名稱、分數、狀態與重點摘要，可橫向捲動查看完整欄位。</p>
+            <p>依分數列表顯示各生活圈評估結果。</p>
           </div>
 
           <div class="table-wrap cluster-scroll-table interactive-table">
@@ -180,20 +185,16 @@ onMounted(loadAnalysisDetail)
               <thead>
                 <tr>
                   <th>生活圈</th>
-                  <th>分數</th>
-                  <th>狀態</th>
-                  <th>範圍</th>
+                  <th>綜合</th>
                   <th>商業</th>
-                  <th>客群</th>
-                  <th>Transit</th>
-                  <th>競爭</th>
-                  <th>摘要</th>
+                  <th>人口</th>
+                  <th>交通</th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!metricClusters.length">
-                  <td colspan="10" class="empty-cell">目前沒有生活圈資料。</td>
+                  <td colspan="6" class="empty-cell">目前沒有生活圈資料。</td>
                 </tr>
                 <tr
                   v-for="cluster in metricClusters"
@@ -207,13 +208,9 @@ onMounted(loadAnalysisDetail)
                     <span class="sub">ID：{{ cluster.id || '-' }}</span>
                   </td>
                   <td>{{ cluster.score }}</td>
-                  <td><span class="badge type">{{ cluster.status }}</span></td>
-                  <td>{{ cluster.radius }}</td>
                   <td>{{ toScore(cluster.businessScore) }}</td>
                   <td>{{ toScore(cluster.populationScore) }}</td>
                   <td>{{ toScore(cluster.transitScore) }}</td>
-                  <td>{{ cluster.competition }}</td>
-                  <td>{{ cluster.headline }}</td>
                   <td>
                     <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', cluster)">
                       查看詳情

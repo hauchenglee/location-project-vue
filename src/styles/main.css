@@ -865,7 +865,7 @@ button:disabled {
 .table-wrap {
   overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 18px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.36);
 }
 
@@ -877,7 +877,7 @@ table {
 
 thead th {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.32);
   background: rgba(255, 255, 255, 0.5);
   color: #334155;
   font-size: 12px;
@@ -905,13 +905,18 @@ tbody tr:hover {
 .interactive-table tbody tr {
   cursor: pointer;
   outline: none;
-  transition: 0.18s ease;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
 }
 
 .interactive-table tbody tr:hover,
 .interactive-table tbody tr:focus-visible {
   background: rgba(37, 99, 235, 0.07);
   box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.42);
+}
+
+.interactive-table tbody tr:hover td,
+.interactive-table tbody tr:focus-visible td {
+  border-bottom-color: rgba(37, 99, 235, 0.22);
 }
 
 .case-id {

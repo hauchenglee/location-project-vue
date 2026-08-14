@@ -9,6 +9,6 @@ defineProps({
 
 <template>
   <div class="cluster-panel-empty">
-    <span>客群潛力內容規劃中</span>
+    <span>人口內容規劃中</span>
   </div>
 </template>

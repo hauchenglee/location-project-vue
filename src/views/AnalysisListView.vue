@@ -83,12 +83,7 @@ const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
 const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
 const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
 
-const clusterCount = (item) => item.metricClusters?.length || 0
 const formatRadius = (item) => item.radius ?? '-'
-const topClusterScore = (item) => {
-  const scores = item.metricClusters?.map((cluster) => Number(cluster.compositeScore)).filter(Number.isFinite) || []
-  return scores.length ? Math.max(...scores) : '-'
-}
 
 const loadCases = async () => {
   isLoading.value = true
@@ -238,8 +233,8 @@ onMounted(loadCases)
                     <span class="sub">年齡層：{{ formatAgeGroup(analysis.selectedAgeGroup) }}</span>
                   </td>
                   <td>
-                    {{ clusterCount(analysis) }} 個
-                    <span class="sub">最高分：{{ topClusterScore(analysis) }}</span>
+                    詳情頁取得
+                    <span class="sub">分數列表</span>
                   </td>
                   <td>{{ formatDateTime(analysis.createTime) }}</td>
                   <td>
@@ -270,7 +265,7 @@ onMounted(loadCases)
         <PageLoading
           v-if="isLoading"
           title="正在取得分析列表"
-          description="系統正在載入分析案件與生活圈摘要。"
+          description="系統正在載入分析案件資料。"
         />
       </div>
     </div>

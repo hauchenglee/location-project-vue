@@ -80,7 +80,7 @@ const submitAnalysis = async () => {
         <div class="form-shell">
           <div class="page-title">
             <h2>提交分析</h2>
-            <p>填寫商品、區域與客群條件，建立新的選址分析。</p>
+            <p>填寫商品、區域與人口條件，建立新的選址分析。</p>
           </div>
 
           <div class="section">

@@ -38,7 +38,16 @@ const clusterTabs = [
   { key: 'population', label: '人口', component: ClusterDetailPopulationPanel, loader: caseApi.getPopulation },
   { key: 'people', label: '人潮', component: ClusterDetailPeoplePanel, loader: caseApi.getPeople },
   { key: 'transit', label: '交通', component: ClusterDetailTransitPanel, loader: caseApi.getTransit },
-  { key: 'cell', label: '空間熱點', component: ClusterDetailCellPenel },
+  {
+    key: 'cell',
+    label: '空間熱點',
+    component: ClusterDetailCellPenel,
+    loader: caseApi.listMetricCells,
+    buildRequest: () => ({
+      analysisId: props.analysisId,
+      metricClusterId: props.clusterId,
+    }),
+  },
 ]
 
 const activeTabConfig = computed(() => clusterTabs.find((tab) => tab.key === activeTab.value) || clusterTabs[0])
@@ -121,10 +130,13 @@ const loadActiveTab = async () => {
   tabErrors[tab.key] = ''
 
   try {
-    tabVoMap[tab.key] = await tab.loader({
-      id: props.clusterId,
-      analysisId: props.analysisId,
-    })
+    const request = tab.buildRequest
+      ? tab.buildRequest()
+      : {
+          id: props.clusterId,
+          analysisId: props.analysisId,
+        }
+    tabVoMap[tab.key] = await tab.loader(request)
   } catch (error) {
     tabErrors[tab.key] = error?.response?.data?.message || error.message || `取得${tab.label}資料失敗`
     delete tabVoMap[tab.key]
@@ -185,7 +197,12 @@ watch(activeTab, loadActiveTab)
             </button>
           </nav>
 
-          <component :is="activePanel" :vo="activeVo" :selected-age-group="selectedAgeGroup" />
+          <component
+            :is="activePanel"
+            :vo="activeVo"
+            :cluster-id="clusterId"
+            :selected-age-group="selectedAgeGroup"
+          />
         </section>
 
         <PageLoading

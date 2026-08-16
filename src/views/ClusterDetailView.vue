@@ -45,7 +45,6 @@ const clusterTabs = [
     loader: caseApi.listMetricCells,
     buildRequest: () => ({
       analysisId: props.analysisId,
-      metricClusterId: props.clusterId,
     }),
   },
 ]

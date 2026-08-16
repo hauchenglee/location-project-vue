@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 
@@ -8,11 +9,14 @@ const emit = defineEmits(['view-detail'])
 const isLoading = ref(false)
 const loadError = ref('')
 const analyses = ref([])
+const businessIndustryCodes = ref([])
+const isLoadingBusinessIndustryCodes = ref(false)
+const businessIndustryCodeError = ref('')
 
 const filters = reactive({
   taskNo: '',
   productName: '',
-  industryCode: '全部類別',
+  industryCode: '',
   status: '全部狀態',
 })
 
@@ -53,12 +57,14 @@ const ageGroupLabelMap = {
 
 const analysisItems = computed(() => analyses.value)
 
+const normalizeIndustryCodeForApi = (industryCode) => String(industryCode || '').replace(/[^0-9A-Za-z]/g, '')
+
 const filteredAnalyses = computed(() =>
   analysisItems.value.filter((item) => {
     const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
     const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
     const matchesIndustryCode =
-      filters.industryCode === '全部類別' || item.industryCode === filters.industryCode
+      !filters.industryCode || normalizeIndustryCodeForApi(item.industryCode) === filters.industryCode
     const matchesStatus = filters.status === '全部狀態' || item.status === filters.status
 
     return matchesTaskNo && matchesProductName && matchesIndustryCode && matchesStatus
@@ -100,16 +106,35 @@ const loadCases = async () => {
   }
 }
 
+const loadBusinessIndustryCodes = async () => {
+  isLoadingBusinessIndustryCodes.value = true
+  businessIndustryCodeError.value = ''
+
+  try {
+    const data = await caseApi.listBusinessIndustryCodes()
+    businessIndustryCodes.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    businessIndustryCodeError.value =
+      error?.response?.data?.message || error.message || '取得產業類別失敗'
+    businessIndustryCodes.value = []
+  } finally {
+    isLoadingBusinessIndustryCodes.value = false
+  }
+}
+
 const resetFilters = () => {
   Object.assign(filters, {
     taskNo: '',
     productName: '',
-    industryCode: '全部類別',
+    industryCode: '',
     status: '全部狀態',
   })
 }
 
-onMounted(loadCases)
+onMounted(() => {
+  loadCases()
+  loadBusinessIndustryCodes()
+})
 </script>
 
 <template>
@@ -138,12 +163,15 @@ onMounted(loadCases)
             </div>
             <div class="field">
               <label for="industryCodeFilter">產業類別</label>
-              <select id="industryCodeFilter" v-model="filters.industryCode">
-                <option>全部類別</option>
-                <option>餐飲</option>
-                <option>零售</option>
-                <option>服務</option>
-              </select>
+              <IndustryCodeSelect
+                id="industryCodeFilter"
+                v-model="filters.industryCode"
+                :options="businessIndustryCodes"
+                :disabled="isLoadingBusinessIndustryCodes"
+                :placeholder="isLoadingBusinessIndustryCodes ? '載入類別中' : '全部類別'"
+                empty-label="全部類別"
+              />
+              <div v-if="businessIndustryCodeError" class="field-note error">{{ businessIndustryCodeError }}</div>
             </div>
             <div class="field">
               <label for="statusFilter">處理狀態</label>

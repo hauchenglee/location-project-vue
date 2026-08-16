@@ -16,15 +16,24 @@ const props = defineProps({
 const mapEl = ref(null)
 const selectedCellId = ref(null)
 const hoveredCellId = ref(null)
+const visibleMode = ref('cluster')
 
 let map
 let geoJsonLayer
 const layerByCellId = new Map()
 const maxCellZoom = 19
 const cellZoomOffset = 2
+const cellBoundsPadding = [36, 36]
 let cellFocusZoom = 17
 
 const metricGroups = [
+  {
+    key: 'heat',
+    title: '熱力',
+    metrics: [
+      { key: 'smoothedCompositeRank', label: '平滑後綜合模型強度' },
+    ],
+  },
   {
     key: 'business',
     title: '商業',
@@ -65,7 +74,7 @@ const metricGroups = [
 const metricCells = computed(() => {
   const cells = Array.isArray(props.vo) ? props.vo : []
 
-  if (!props.clusterId) {
+  if (visibleMode.value === 'all' || !props.clusterId) {
     return cells
   }
 
@@ -102,6 +111,17 @@ const formatRank = (value) => {
   }).format(number)
 }
 
+const getHeatColor = (value) => {
+  const rank = Number(value)
+
+  if (!Number.isFinite(rank)) return '#e2e8f0'
+  if (rank < 80) return '#e2e8f0'
+  if (rank < 85) return '#fde68a'
+  if (rank < 90) return '#f59e0b'
+  if (rank < 95) return '#f97316'
+  return '#dc2626'
+}
+
 const toFeature = (cell) => {
   if (!cell?.geom) return null
 
@@ -115,7 +135,7 @@ const toFeature = (cell) => {
   }
 }
 
-const getCellStyle = (cellId) => {
+const getCellStyle = (cellId, cell) => {
   const isSelected = String(cellId) === String(selectedCellId.value)
   const isHovered = String(cellId) === String(hoveredCellId.value)
 
@@ -123,36 +143,40 @@ const getCellStyle = (cellId) => {
     return {
       color: '#0f172a',
       weight: 3,
-      fillColor: '#2563eb',
-      fillOpacity: 0.72,
+      fillColor: getHeatColor(cell?.smoothedCompositeRank),
+      fillOpacity: 0.88,
     }
   }
 
   if (isHovered) {
     return {
-      color: '#1d4ed8',
+      color: '#0f172a',
       weight: 3,
-      fillColor: '#60a5fa',
-      fillOpacity: 0.38,
+      fillColor: getHeatColor(cell?.smoothedCompositeRank),
+      fillOpacity: 0.72,
     }
   }
 
   return {
     color: '#334155',
     weight: 1.4,
-    fillColor: '#f8fafc',
-    fillOpacity: 0.48,
+    fillColor: getHeatColor(cell?.smoothedCompositeRank),
+    fillOpacity: cell?.metricClusterId ? 0.5 : 0.24,
   }
 }
 
 const restyleLayers = () => {
   layerByCellId.forEach((layer, cellId) => {
-    layer.setStyle(getCellStyle(cellId))
+    layer.setStyle(getCellStyle(cellId, layer.feature?.properties?.cell))
 
     if (String(cellId) === String(selectedCellId.value)) {
       layer.bringToFront()
     }
   })
+}
+
+const setVisibleMode = (value) => {
+  visibleMode.value = value
 }
 
 const selectCell = (cellId) => {
@@ -171,6 +195,14 @@ const focusSelectedCell = () => {
     animate: true,
     duration: 0.45,
   })
+}
+
+const updateCellFocusZoom = (bounds) => {
+  if (!map || !bounds?.isValid?.()) return cellFocusZoom
+
+  const fitZoom = map.getBoundsZoom(bounds, false, cellBoundsPadding)
+  cellFocusZoom = Math.min(fitZoom + cellZoomOffset, maxCellZoom)
+  return cellFocusZoom
 }
 
 const renderCells = async () => {
@@ -200,7 +232,7 @@ const renderCells = async () => {
       features,
     },
     {
-      style: (feature) => getCellStyle(feature.properties.cellId),
+      style: (feature) => getCellStyle(feature.properties.cellId, feature.properties.cell),
       onEachFeature: (feature, layer) => {
         const cellId = feature.properties.cellId
         layerByCellId.set(cellId, layer)
@@ -223,12 +255,9 @@ const renderCells = async () => {
   ).addTo(map)
 
   const bounds = geoJsonLayer.getBounds()
-  map.fitBounds(bounds, {
-    padding: [36, 36],
-    maxZoom: maxCellZoom,
+  map.setView(bounds.getCenter(), updateCellFocusZoom(bounds), {
+    animate: false,
   })
-  cellFocusZoom = Math.min(map.getZoom() + cellZoomOffset, maxCellZoom)
-  map.setZoom(cellFocusZoom, { animate: false })
 
   restyleLayers()
   window.setTimeout(() => map?.invalidateSize(), 80)
@@ -277,6 +306,35 @@ onBeforeUnmount(() => {
             定位選取 Cell
           </button>
           <strong>{{ metricCells.length }} cells</strong>
+        </div>
+      </div>
+      <div class="cell-control-bar">
+        <div class="cell-filter-block">
+          <span>格網範圍</span>
+          <div class="cell-filter-toggle" aria-label="格網顯示範圍">
+            <button
+              type="button"
+              :class="{ active: visibleMode === 'cluster' }"
+              @click="setVisibleMode('cluster')"
+            >
+              目前生活圈
+            </button>
+            <button
+              type="button"
+              :class="{ active: visibleMode === 'all' }"
+              @click="setVisibleMode('all')"
+            >
+              全部格網
+            </button>
+          </div>
+        </div>
+
+        <div class="cell-heat-legend" aria-label="smoothedCompositeRank 熱力圖例">
+          <strong>smoothedCompositeRank</strong>
+          <span><i class="heat-80"></i>80-85</span>
+          <span><i class="heat-85"></i>85-90</span>
+          <span><i class="heat-90"></i>90-95</span>
+          <span><i class="heat-95"></i>95-100</span>
         </div>
       </div>
       <div ref="mapEl" class="cell-map leaflet-stage" aria-label="空間熱點格網地圖"></div>
@@ -342,7 +400,7 @@ onBeforeUnmount(() => {
 
 .cell-map-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .cell-map-head {
@@ -415,6 +473,92 @@ onBeforeUnmount(() => {
 .cell-locate-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.cell-control-bar {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.cell-filter-block,
+.cell-heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cell-filter-block > span,
+.cell-heat-legend strong {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cell-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cell-filter-toggle button {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cell-filter-toggle button.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.cell-heat-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cell-heat-legend i {
+  width: 14px;
+  height: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 3px;
+}
+
+.cell-heat-legend .heat-80 {
+  background: #fde68a;
+}
+
+.cell-heat-legend .heat-85 {
+  background: #f59e0b;
+}
+
+.cell-heat-legend .heat-90 {
+  background: #f97316;
+}
+
+.cell-heat-legend .heat-95 {
+  background: #dc2626;
 }
 
 .cell-map {

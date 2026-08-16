@@ -391,6 +391,7 @@ button:disabled {
 }
 
 .section {
+  position: relative;
   margin-bottom: 16px;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -398,6 +399,10 @@ button:disabled {
   background: var(--panel);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(16px);
+}
+
+.section:has(.industry-select.open) {
+  z-index: 90;
 }
 
 .section-header {
@@ -679,10 +684,15 @@ button:disabled {
 }
 
 .field {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 14px;
+}
+
+.field:has(.industry-select.open) {
+  z-index: 100;
 }
 
 .grid-4 .field {
@@ -706,6 +716,10 @@ button:disabled {
   line-height: 1.55;
 }
 
+.field-note.error {
+  color: #b91c1c;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -718,6 +732,196 @@ button:disabled {
   color: var(--text);
   font-size: 13px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.industry-select {
+  position: relative;
+  width: 100%;
+}
+
+.industry-select.open {
+  z-index: 110;
+}
+
+.industry-select-trigger {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.industry-select-trigger:disabled {
+  cursor: not-allowed;
+}
+
+.industry-select-trigger .placeholder {
+  color: var(--muted-2);
+  font-weight: 500;
+}
+
+.industry-select-arrow {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.industry-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 120;
+  width: min(560px, 100vw - 48px);
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.16);
+}
+
+.industry-select-search {
+  padding: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: #f8fafc;
+}
+
+.industry-select-search input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.industry-select-search input:focus {
+  border-color: rgba(37, 99, 235, 0.58);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.industry-select-list {
+  min-height: 220px;
+  max-height: 340px;
+  overflow: auto;
+  padding: 6px;
+}
+
+.industry-tree-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.industry-toggle,
+.industry-toggle-spacer {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 34px;
+}
+
+.industry-toggle {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.industry-toggle:hover {
+  background: #eff6ff;
+}
+
+.industry-option {
+  width: 100%;
+  display: block;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.industry-option.tree {
+  min-height: 34px;
+  padding: 7px 8px;
+}
+
+.industry-option.search-result,
+.industry-option.empty {
+  padding: 9px 10px;
+}
+
+.industry-option:hover,
+.industry-option.selected {
+  background: #eff6ff;
+}
+
+.industry-option.parent {
+  cursor: pointer;
+}
+
+.industry-option.selected {
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.industry-option-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.industry-code {
+  flex: 0 0 auto;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.industry-name {
+  overflow: hidden;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.industry-definition {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.industry-empty {
+  padding: 18px 12px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
 }
 
 .mode-switch {
@@ -808,8 +1012,8 @@ button:disabled {
 
 .page-loading-overlay {
   position: fixed;
-  inset: 76px 0 0;
-  z-index: 40;
+  inset: 0;
+  z-index: 100;
   display: grid;
   place-items: center;
   padding: var(--page-gutter);

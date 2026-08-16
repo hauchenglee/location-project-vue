@@ -67,4 +67,14 @@ export const caseApi = {
     const response = await apiClient.post('/api/analysis/submit', payload)
     return unwrapResponse(response)
   },
+
+  async listAdminAreas() {
+    const response = await apiClient.post('/api/map/admin-area/list')
+    return unwrapResponse(response) || []
+  },
+
+  async listBusinessIndustryCodes() {
+    const response = await apiClient.post('/api/map/business-industry-code/list')
+    return unwrapResponse(response) || []
+  },
 }

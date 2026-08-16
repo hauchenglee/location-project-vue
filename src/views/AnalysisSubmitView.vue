@@ -1,5 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
@@ -7,6 +8,12 @@ import { caseApi } from '@/services/caseApi'
 const isSubmitting = ref(false)
 const submitError = ref('')
 const submitResult = ref(null)
+const adminAreas = ref([])
+const isLoadingAdminAreas = ref(false)
+const adminAreaError = ref('')
+const businessIndustryCodes = ref([])
+const isLoadingBusinessIndustryCodes = ref(false)
+const businessIndustryCodeError = ref('')
 
 const initialForm = {
   taskNo: '',
@@ -27,6 +34,8 @@ const initialForm = {
 const form = reactive({ ...initialForm })
 
 const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 500))
+const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
+const townOptions = computed(() => selectedAdminArea.value?.towns || [])
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -42,6 +51,47 @@ const resetForm = () => {
   submitError.value = ''
   submitResult.value = null
 }
+
+const loadAdminAreas = async () => {
+  isLoadingAdminAreas.value = true
+  adminAreaError.value = ''
+
+  try {
+    adminAreas.value = await caseApi.listAdminAreas()
+  } catch (error) {
+    adminAreaError.value = error?.response?.data?.message || error.message || '取得行政區失敗'
+  } finally {
+    isLoadingAdminAreas.value = false
+  }
+}
+
+const loadBusinessIndustryCodes = async () => {
+  isLoadingBusinessIndustryCodes.value = true
+  businessIndustryCodeError.value = ''
+
+  try {
+    const data = await caseApi.listBusinessIndustryCodes()
+    businessIndustryCodes.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    businessIndustryCodeError.value =
+      error?.response?.data?.message || error.message || '取得產業類別失敗'
+    businessIndustryCodes.value = []
+  } finally {
+    isLoadingBusinessIndustryCodes.value = false
+  }
+}
+
+watch(
+  () => form.countyName,
+  () => {
+    form.townName = ''
+  },
+)
+
+onMounted(() => {
+  loadAdminAreas()
+  loadBusinessIndustryCodes()
+})
 
 const createPayload = () => ({
   taskNo: form.taskNo || null,
@@ -102,13 +152,15 @@ const submitAnalysis = async () => {
 
             <div class="field">
               <label for="industryCode">產業類別</label>
-              <select id="industryCode" v-model="form.industryCode">
-                <option value="">請選擇產業類別</option>
-                <option value="餐飲">餐飲</option>
-                <option value="零售">零售</option>
-                <option value="服務">服務</option>
-              </select>
-              <div class="field-note">選擇最接近的產業類別，讓分析結果更貼近實際經營情境。</div>
+              <IndustryCodeSelect
+                id="industryCode"
+                v-model="form.industryCode"
+                :options="businessIndustryCodes"
+                :disabled="isLoadingBusinessIndustryCodes"
+                :placeholder="isLoadingBusinessIndustryCodes ? '載入產業類別中' : '請選擇產業類別'"
+              />
+              <div v-if="businessIndustryCodeError" class="field-note error">{{ businessIndustryCodeError }}</div>
+              <div v-else class="field-note">選擇最接近的產業類別，讓分析結果更貼近實際經營情境。</div>
             </div>
           </div>
 
@@ -143,23 +195,29 @@ const submitAnalysis = async () => {
                 <div class="grid-2">
                   <div class="field">
                     <label for="countyName">縣市</label>
-                    <select id="countyName" v-model="form.countyName">
-                      <option value="">請選擇縣市</option>
-                      <option>台北市</option>
-                      <option>新北市</option>
-                      <option>桃園市</option>
-                      <option>台中市</option>
-                      <option>高雄市</option>
+                    <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
+                      <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
+                      <option
+                        v-for="area in adminAreas"
+                        :key="area.countyCode || area.countyId || area.countyName"
+                        :value="area.countyName"
+                      >
+                        {{ area.countyName }}
+                      </option>
                     </select>
+                    <div v-if="adminAreaError" class="field-note">{{ adminAreaError }}</div>
                   </div>
                   <div class="field">
                     <label for="townName">鄉鎮市區</label>
-                    <select id="townName" v-model="form.townName">
+                    <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
                       <option value="">請選擇鄉鎮市區</option>
-                      <option>大安區</option>
-                      <option>信義區</option>
-                      <option>中山區</option>
-                      <option>松山區</option>
+                      <option
+                        v-for="town in townOptions"
+                        :key="town.townCode || town.townId || town.townName"
+                        :value="town.townName"
+                      >
+                        {{ town.townName }}
+                      </option>
                     </select>
                   </div>
                 </div>

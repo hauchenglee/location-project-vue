@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
-import ClusterDetailOverviewPanel from '@/views/cluster-detail/ClusterDetailOverviewPanel.vue'
 import ClusterDetailBusinessPanel from '@/views/cluster-detail/ClusterDetailBusinessPanel.vue'
 import ClusterDetailPopulationPanel from '@/views/cluster-detail/ClusterDetailPopulationPanel.vue'
 import ClusterDetailPeoplePanel from '@/views/cluster-detail/ClusterDetailPeoplePanel.vue'
 import ClusterDetailTransitPanel from '@/views/cluster-detail/ClusterDetailTransitPanel.vue'
+import ClusterDetailCellPenel from '@/views/cluster-detail/ClusterDetailCellPenel.vue'
 
 const props = defineProps({
   analysisId: {
@@ -17,26 +17,39 @@ const props = defineProps({
     type: [Number, String],
     default: null,
   },
+  selectedAgeGroup: {
+    type: String,
+    default: 'ALL',
+  },
 })
 
 const emit = defineEmits(['back'])
 
 const activeTab = ref('business')
-const cluster = ref(null)
-const analysis = ref(null)
-const isLoading = ref(false)
-const loadError = ref('')
+const metricCluster = ref(null)
+const isMetricClusterLoading = ref(false)
+const metricClusterError = ref('')
+const tabVoMap = reactive({})
+const tabLoading = reactive({})
+const tabErrors = reactive({})
 
 const clusterTabs = [
-  { key: 'business', label: '商業', component: ClusterDetailBusinessPanel },
-  { key: 'population', label: '人口', component: ClusterDetailPopulationPanel },
-  { key: 'people', label: '人流表現', component: ClusterDetailPeoplePanel },
-  { key: 'transit', label: '交通', component: ClusterDetailTransitPanel },
-  { key: 'overview', label: '總覽', component: ClusterDetailOverviewPanel },
+  { key: 'business', label: '商業', component: ClusterDetailBusinessPanel, loader: caseApi.getBusiness },
+  { key: 'population', label: '人口', component: ClusterDetailPopulationPanel, loader: caseApi.getPopulation },
+  { key: 'people', label: '人潮', component: ClusterDetailPeoplePanel, loader: caseApi.getPeople },
+  { key: 'transit', label: '交通', component: ClusterDetailTransitPanel, loader: caseApi.getTransit },
+  { key: 'cell', label: '空間熱點', component: ClusterDetailCellPenel },
 ]
 
+const activeTabConfig = computed(() => clusterTabs.find((tab) => tab.key === activeTab.value) || clusterTabs[0])
 const activePanel = computed(
-  () => clusterTabs.find((tab) => tab.key === activeTab.value)?.component || ClusterDetailOverviewPanel,
+  () => activeTabConfig.value.component,
+)
+const activeVo = computed(() => tabVoMap[activeTab.value] || null)
+const activeError = computed(() => tabErrors[activeTab.value] || '')
+const isLoading = computed(() => isMetricClusterLoading.value || Boolean(tabLoading[activeTab.value]))
+const loadingTitle = computed(() =>
+  isMetricClusterLoading.value ? '正在取得生活圈資料' : `正在取得${activeTabConfig.value.label}資料`,
 )
 
 const toScore = (value) => {
@@ -44,14 +57,13 @@ const toScore = (value) => {
   return Number.isFinite(score) ? Math.round(score) : '-'
 }
 
-const clusterTitle = computed(() => (cluster.value?.id ? `生活圈 ${cluster.value.id}` : '生活圈詳情'))
+const clusterTitle = computed(() => (metricCluster.value?.id || props.clusterId ? `生活圈 ${metricCluster.value?.id || props.clusterId}` : '生活圈詳情'))
 
 const clusterMetrics = computed(() => [
-  { key: 'composite', label: '綜合', value: toScore(cluster.value?.compositeScore) },
-  { key: 'business', label: '商業', value: toScore(cluster.value?.businessScore) },
-  { key: 'population', label: '人口', value: toScore(cluster.value?.populationScore) },
-  { key: 'people', label: '人流', value: toScore(cluster.value?.peopleScore) },
-  { key: 'transit', label: '交通', value: toScore(cluster.value?.transitScore) },
+  { key: 'composite', label: '綜合', value: toScore(metricCluster.value?.compositeScore) },
+  { key: 'business', label: '商業', value: toScore(metricCluster.value?.businessScore) },
+  { key: 'population', label: '人口', value: toScore(metricCluster.value?.populationScore) },
+  { key: 'transit', label: '交通', value: toScore(metricCluster.value?.transitScore) },
 ])
 
 const headerMetrics = computed(() => {
@@ -60,44 +72,76 @@ const headerMetrics = computed(() => {
   return [composite, active].filter((metric, index, metrics) => metric && metrics.findIndex((item) => item.key === metric.key) === index)
 })
 
-const loadClusterDetail = async () => {
+const resetTabs = () => {
+  Object.keys(tabVoMap).forEach((key) => delete tabVoMap[key])
+  Object.keys(tabLoading).forEach((key) => delete tabLoading[key])
+  Object.keys(tabErrors).forEach((key) => delete tabErrors[key])
+}
+
+const loadMetricCluster = async () => {
   if (!props.clusterId) {
-    cluster.value = null
-    analysis.value = null
-    loadError.value = '缺少生活圈編號，無法取得詳情。'
+    metricCluster.value = null
+    metricClusterError.value = '缺少生活圈編號，無法取得生活圈資料。'
     return
   }
 
-  isLoading.value = true
-  loadError.value = ''
+  isMetricClusterLoading.value = true
+  metricClusterError.value = ''
 
   try {
-    const [clusterResult, analysisResult] = await Promise.allSettled([
-      caseApi.getCluster({ id: props.clusterId }),
-      props.analysisId ? caseApi.getAnalysis({ id: props.analysisId }) : Promise.resolve(null),
-    ])
-
-    if (clusterResult.status === 'rejected') {
-      throw clusterResult.reason
-    }
-
-    cluster.value = clusterResult.value
-    analysis.value = analysisResult.status === 'fulfilled' ? analysisResult.value : null
+    metricCluster.value = await caseApi.getMetricCluster({
+      id: props.clusterId,
+      analysisId: props.analysisId,
+    })
   } catch (error) {
-    loadError.value = error?.response?.data?.message || error.message || '取得生活圈詳情失敗'
-    cluster.value = null
-    analysis.value = null
+    metricCluster.value = null
+    metricClusterError.value = error?.response?.data?.message || error.message || '取得生活圈資料失敗'
   } finally {
-    isLoading.value = false
+    isMetricClusterLoading.value = false
+  }
+}
+
+const loadActiveTab = async () => {
+  if (!props.clusterId) {
+    tabErrors[activeTab.value] = '缺少生活圈編號，無法取得詳情。'
+    return
+  }
+
+  if (tabVoMap[activeTab.value] || tabLoading[activeTab.value]) {
+    return
+  }
+
+  const tab = activeTabConfig.value
+  if (!tab.loader) {
+    tabErrors[tab.key] = ''
+    return
+  }
+
+  tabLoading[tab.key] = true
+  tabErrors[tab.key] = ''
+
+  try {
+    tabVoMap[tab.key] = await tab.loader({
+      id: props.clusterId,
+      analysisId: props.analysisId,
+    })
+  } catch (error) {
+    tabErrors[tab.key] = error?.response?.data?.message || error.message || `取得${tab.label}資料失敗`
+    delete tabVoMap[tab.key]
+  } finally {
+    tabLoading[tab.key] = false
   }
 }
 
 watch(() => [props.clusterId, props.analysisId], () => {
   activeTab.value = clusterTabs[0].key
-  loadClusterDetail()
-})
+  metricCluster.value = null
+  resetTabs()
+  loadMetricCluster()
+  loadActiveTab()
+}, { immediate: true })
 
-onMounted(loadClusterDetail)
+watch(activeTab, loadActiveTab)
 </script>
 
 <template>
@@ -125,7 +169,8 @@ onMounted(loadClusterDetail)
             </div>
           </div>
 
-          <div v-if="loadError" class="form-message error">{{ loadError }}</div>
+          <div v-if="metricClusterError" class="form-message error">{{ metricClusterError }}</div>
+          <div v-if="activeError" class="form-message error">{{ activeError }}</div>
 
           <nav class="cluster-detail-tabs" aria-label="生活圈詳情頁籤">
             <button
@@ -140,13 +185,13 @@ onMounted(loadClusterDetail)
             </button>
           </nav>
 
-          <component :is="activePanel" :cluster="cluster" :selected-age-group="analysis?.selectedAgeGroup" />
+          <component :is="activePanel" :vo="activeVo" :selected-age-group="selectedAgeGroup" />
         </section>
 
         <PageLoading
           v-if="isLoading"
-          title="正在取得生活圈詳情"
-          description="系統正在載入生活圈分數與指標資料。"
+          :title="loadingTitle"
+          description="系統正在載入目前頁簽需要的生活圈資料。"
         />
       </div>
     </div>

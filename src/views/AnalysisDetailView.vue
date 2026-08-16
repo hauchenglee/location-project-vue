@@ -14,7 +14,7 @@ const emit = defineEmits(['back', 'view-cluster'])
 
 const isParameterOpen = ref(false)
 const detailAnalysis = ref(null)
-const clusterScores = ref([])
+const metricClusterList = ref([])
 const isLoading = ref(false)
 const loadError = ref('')
 
@@ -23,7 +23,7 @@ const baseAnalysis = computed(() => detailAnalysis.value || {})
 const loadAnalysisDetail = async () => {
   if (!props.analysisId) {
     detailAnalysis.value = null
-    clusterScores.value = []
+    metricClusterList.value = []
     loadError.value = '缺少分析案件編號，無法取得詳情。'
     return
   }
@@ -34,15 +34,15 @@ const loadAnalysisDetail = async () => {
   try {
     const [analysis, clusters] = await Promise.all([
       caseApi.getAnalysis({ id: props.analysisId }),
-      caseApi.listClusterScores({ analysisId: props.analysisId }),
+      caseApi.listMetricClusters({ analysisId: props.analysisId }),
     ])
 
     detailAnalysis.value = analysis
-    clusterScores.value = Array.isArray(clusters) ? clusters : []
+    metricClusterList.value = Array.isArray(clusters) ? clusters : []
   } catch (error) {
     loadError.value = error?.response?.data?.message || error.message || '取得分析詳情失敗'
     detailAnalysis.value = null
-    clusterScores.value = []
+    metricClusterList.value = []
   } finally {
     isLoading.value = false
   }
@@ -55,17 +55,15 @@ const toScore = (value) => {
 
 const analysisRadius = computed(() => baseAnalysis.value.radius ?? null)
 
-const metricClusters = computed(() => {
-  const clusters = clusterScores.value
-
-  return clusters.map((cluster, index) => {
-    const score = toScore(cluster.compositeScore)
+const metricClusterRows = computed(() => {
+  return metricClusterList.value.map((metricCluster, index) => {
+    const compositeScoreDisplay = toScore(metricCluster.compositeScore)
 
     return {
-      ...cluster,
-      uiId: cluster.id ?? `cluster-${index + 1}`,
-      name: `生活圈 ${index + 1}`,
-      score,
+      ...metricCluster,
+      rowKey: metricCluster.id ?? `metric-cluster-${index + 1}`,
+      displayName: `生活圈 ${index + 1}`,
+      compositeScoreDisplay,
     }
   })
 })
@@ -127,7 +125,7 @@ onMounted(loadAnalysisDetail)
               </button>
               <h2>{{ baseAnalysis.productName || '分析詳情' }}</h2>
             </div>
-            <p>{{ formatLocation(baseAnalysis) }}，共找到 {{ metricClusters.length }} 個生活圈可比較。</p>
+            <p>{{ formatLocation(baseAnalysis) }}，共找到 {{ metricClusterRows.length }} 個生活圈可比較。</p>
           </div>
 
           <div class="detail-title-meta">
@@ -193,26 +191,26 @@ onMounted(loadAnalysisDetail)
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="!metricClusters.length">
+                <tr v-if="!metricClusterRows.length">
                   <td colspan="6" class="empty-cell">目前沒有生活圈資料。</td>
                 </tr>
                 <tr
-                  v-for="cluster in metricClusters"
-                  :key="cluster.uiId"
+                  v-for="metricCluster in metricClusterRows"
+                  :key="metricCluster.rowKey"
                   tabindex="0"
-                  @click="emit('view-cluster', cluster)"
-                  @keydown.enter="emit('view-cluster', cluster)"
+                  @click="emit('view-cluster', metricCluster, baseAnalysis)"
+                  @keydown.enter="emit('view-cluster', metricCluster, baseAnalysis)"
                 >
                   <td>
-                    <span class="case-id">{{ cluster.name }}</span>
-                    <span class="sub">ID：{{ cluster.id || '-' }}</span>
+                    <span class="case-id">{{ metricCluster.displayName }}</span>
+                    <span class="sub">ID：{{ metricCluster.id || '-' }}</span>
                   </td>
-                  <td>{{ cluster.score }}</td>
-                  <td>{{ toScore(cluster.businessScore) }}</td>
-                  <td>{{ toScore(cluster.populationScore) }}</td>
-                  <td>{{ toScore(cluster.transitScore) }}</td>
+                  <td>{{ metricCluster.compositeScoreDisplay }}</td>
+                  <td>{{ toScore(metricCluster.businessScore) }}</td>
+                  <td>{{ toScore(metricCluster.populationScore) }}</td>
+                  <td>{{ toScore(metricCluster.transitScore) }}</td>
                   <td>
-                    <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', cluster)">
+                    <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', metricCluster, baseAnalysis)">
                       查看詳情
                     </button>
                   </td>

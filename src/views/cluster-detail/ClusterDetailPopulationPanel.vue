@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  cluster: {
+  vo: {
     type: Object,
     default: null,
   },
@@ -40,7 +40,7 @@ const selectedAgeGroupMap = {
   '65+': { label: '65 歲以上', keys: ['65+'] },
 }
 
-const population = computed(() => props.cluster?.population || null)
+const population = computed(() => props.vo || null)
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -85,12 +85,12 @@ const formatPercent = (value) => {
 const rankMetrics = computed(() => [
   {
     key: 'populationCountRank',
-    label: '人口總量排名',
+    label: '人口數量',
     value: formatRank(population.value?.populationCountRank),
   },
   {
     key: 'populationTargetAgeRank',
-    label: '目標人口排名',
+    label: '目標年齡層人口',
     note: `選擇：${selectedAgeGroupDetail.value.label}`,
     value: formatRank(population.value?.populationTargetAgeRank),
   },
@@ -163,10 +163,10 @@ const selectedAgeGroupDetail = computed(() => {
   <div class="population-panel">
     <section class="population-section">
       <div class="population-section-head">
-        <div>
+        <h3>
+          人口指標
           <span class="population-section-kicker">Indicator</span>
-          <h3>人口指標</h3>
-        </div>
+        </h3>
       </div>
 
       <div class="population-rank-grid">
@@ -182,10 +182,10 @@ const selectedAgeGroupDetail = computed(() => {
 
     <section class="population-section population-data-section">
       <div class="population-section-head">
-        <div>
+        <h3>
+          人口數據
           <span class="population-section-kicker raw">Data</span>
-          <h3>人口數據</h3>
-        </div>
+        </h3>
       </div>
 
       <div class="population-data-grid">
@@ -249,15 +249,15 @@ const selectedAgeGroupDetail = computed(() => {
 .population-section-head,
 .population-card-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
 }
 
 .population-section-kicker {
-  display: block;
-  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
   color: #2563eb;
   font-size: 11px;
   font-weight: 800;
@@ -277,6 +277,10 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .population-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   font-size: 15px;
 }
 
@@ -317,18 +321,19 @@ const selectedAgeGroupDetail = computed(() => {
 
 .population-rank-card-head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .population-rank-card-head small {
-  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
   color: #1e40af;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.4;
-  text-align: right;
 }
 
 .population-rank-card strong {

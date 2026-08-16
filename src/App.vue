@@ -33,6 +33,7 @@ const initialState = readHashState()
 const activePage = ref(initialState.activePage)
 const analysisId = ref(initialState.analysisId)
 const clusterId = ref(initialState.clusterId)
+const selectedAnalysis = ref(null)
 
 const headerActivePage = computed(() =>
   ['detail', 'cluster-detail'].includes(activePage.value) ? 'records' : activePage.value,
@@ -66,17 +67,20 @@ const navigate = (page) => {
   if (!['detail', 'cluster-detail'].includes(page)) {
     analysisId.value = null
     clusterId.value = null
+    selectedAnalysis.value = null
   }
 }
 
 const openAnalysisDetail = (analysis) => {
   analysisId.value = analysis.id
   clusterId.value = null
+  selectedAnalysis.value = analysis
   activePage.value = 'detail'
 }
 
-const openClusterDetail = (cluster) => {
-  clusterId.value = cluster.id
+const openClusterDetail = (metricCluster, analysis) => {
+  clusterId.value = metricCluster.id
+  selectedAnalysis.value = analysis || selectedAnalysis.value
   activePage.value = 'cluster-detail'
 }
 
@@ -108,6 +112,7 @@ onUnmounted(() => {
         v-else
         :analysis-id="analysisId"
         :cluster-id="clusterId"
+        :selected-age-group="selectedAnalysis?.selectedAgeGroup"
         @back="activePage = 'detail'"
       />
     </div>

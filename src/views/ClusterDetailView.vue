@@ -71,6 +71,7 @@ const clusterMetrics = computed(() => [
   { key: 'composite', label: '綜合', value: toScore(metricCluster.value?.compositeScore) },
   { key: 'business', label: '商業', value: toScore(metricCluster.value?.businessScore) },
   { key: 'population', label: '人口', value: toScore(metricCluster.value?.populationScore) },
+  { key: 'people', label: '人潮', value: toScore(metricCluster.value?.peopleScore) },
   { key: 'transit', label: '交通', value: toScore(metricCluster.value?.transitScore) },
 ])
 
@@ -172,7 +173,6 @@ watch(activeTab, loadActiveTab)
             </div>
 
             <div class="cluster-header-summary">
-              <span class="cluster-rating">熱區 <strong>A</strong></span>
               <span v-for="metric in headerMetrics" :key="metric.key" class="cluster-metric">
                 {{ metric.label }}
                 <strong>{{ metric.value }}</strong>

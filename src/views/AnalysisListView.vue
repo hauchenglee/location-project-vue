@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
+import { formatGeometrySummary } from '@/utils/geoJson'
 
 const emit = defineEmits(['view-detail'])
 
@@ -81,8 +82,7 @@ const formatDateTime = (value) => {
 
 const formatLocation = (item) => {
   const district = [item.countyName, item.townName].filter(Boolean).join(' / ')
-  const coordinate = [item.latitude, item.longitude].filter((value) => value !== null && value !== undefined && value !== '').join(', ')
-  return district || coordinate || '-'
+  return district || formatGeometrySummary(item.geom)
 }
 
 const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
@@ -216,7 +216,7 @@ onMounted(() => {
                   <th>案件</th>
                   <th>商品</th>
                   <th>區域</th>
-                  <th>經緯度</th>
+                  <th>geom</th>
                   <th>範圍 / 偏好</th>
                   <th>情境條件</th>
                   <th>生活圈</th>
@@ -248,10 +248,7 @@ onMounted(() => {
                     {{ formatLocation(analysis) }}
                     <span class="sub">行政區域</span>
                   </td>
-                  <td>
-                    {{ analysis.latitude ?? '-' }}
-                    <span class="sub">經度：{{ analysis.longitude ?? '-' }}</span>
-                  </td>
+                  <td>{{ formatGeometrySummary(analysis.geom) }}</td>
                   <td>
                     {{ formatRadius(analysis) }} 公尺
                     <span class="sub">偏好：{{ analysis.preference || '-' }}</span>

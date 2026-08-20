@@ -4,6 +4,12 @@ import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
+import {
+  defaultPointGeometry,
+  formatPointCoordinates,
+  parseGeometryText,
+  stringifyGeometry,
+} from '@/utils/geoJson'
 
 const isSubmitting = ref(false)
 const submitError = ref('')
@@ -22,9 +28,9 @@ const initialForm = {
   locationMode: 'district',
   countyName: '',
   townName: '',
-  longitude: '',
-  latitude: '',
+  geomText: stringifyGeometry(defaultPointGeometry),
   radius: 500,
+  rangeSize: 500,
   preference: '0.5',
   selectedDayType: 'ALL',
   selectedTimeSlot: 'ALL',
@@ -34,8 +40,17 @@ const initialForm = {
 const form = reactive({ ...initialForm })
 
 const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 500))
+const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 100))
 const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
 const townOptions = computed(() => selectedAdminArea.value?.towns || [])
+const pinGeometry = computed(() => {
+  try {
+    return parseGeometryText(form.geomText)
+  } catch {
+    return null
+  }
+})
+const pointCoordinateText = computed(() => formatPointCoordinates(pinGeometry.value))
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -88,25 +103,42 @@ watch(
   },
 )
 
+watch(
+  () => form.locationMode,
+  (mode) => {
+    if (mode === 'pin' && !form.geomText.trim()) {
+      form.geomText = stringifyGeometry(defaultPointGeometry)
+    }
+  },
+)
+
 onMounted(() => {
   loadAdminAreas()
   loadBusinessIndustryCodes()
 })
 
-const createPayload = () => ({
-  taskNo: form.taskNo || null,
-  productName: form.productName,
-  industryCode: form.industryCode,
-  countyName: form.locationMode === 'district' ? form.countyName || null : null,
-  townName: form.locationMode === 'district' ? form.townName || null : null,
-  longitude: form.locationMode === 'pin' && form.longitude !== '' ? Number(form.longitude) : null,
-  latitude: form.locationMode === 'pin' && form.latitude !== '' ? Number(form.latitude) : null,
-  radius: form.locationMode === 'pin' ? radius.value : null,
-  preference: form.preference,
-  selectedDayType: form.selectedDayType,
-  selectedTimeSlot: form.selectedTimeSlot,
-  selectedAgeGroup: form.selectedAgeGroup,
-})
+const updatePinGeometry = (geometry) => {
+  form.geomText = stringifyGeometry(geometry)
+}
+
+const createPayload = () => {
+  const geom = form.locationMode === 'pin' ? parseGeometryText(form.geomText) : null
+
+  return {
+    taskNo: form.taskNo || null,
+    productName: form.productName,
+    industryCode: form.industryCode,
+    countyName: form.locationMode === 'district' ? form.countyName || null : null,
+    townName: form.locationMode === 'district' ? form.townName || null : null,
+    geom,
+    radius: form.locationMode === 'pin' ? radius.value : null,
+    rangeSize: rangeSize.value,
+    preference: form.preference,
+    selectedDayType: form.selectedDayType,
+    selectedTimeSlot: form.selectedTimeSlot,
+    selectedAgeGroup: form.selectedAgeGroup,
+  }
+}
 
 const submitAnalysis = async () => {
   isSubmitting.value = true
@@ -114,7 +146,12 @@ const submitAnalysis = async () => {
   submitResult.value = null
 
   try {
-    submitResult.value = await caseApi.submitAnalysis(createPayload())
+    const payload = createPayload()
+    if (form.locationMode === 'pin' && !payload.geom) {
+      throw new Error('請輸入有效的 EPSG:4326 GeoJSON geom。')
+    }
+
+    submitResult.value = await caseApi.submitAnalysis(payload)
   } catch (error) {
     submitError.value = error?.response?.data?.message || error.message || '提交分析失敗'
   } finally {
@@ -167,7 +204,7 @@ const submitAnalysis = async () => {
           <div class="section">
             <div class="section-header">
               <h3>區域設定</h3>
-              <p>設定分析範圍，可用行政區或精確座標作為分析中心。</p>
+              <p>設定分析範圍，可用行政區或 EPSG:4326 GeoJSON 作為分析中心。</p>
             </div>
 
             <div class="mode-switch">
@@ -183,7 +220,7 @@ const submitAnalysis = async () => {
                 <input v-model="form.locationMode" type="radio" name="locationMode" value="pin" />
                 <span class="mode-card">
                   <strong>地圖放圖釘</strong>
-                  <span>填寫經緯度欄位，適合已有明確位置時使用。</span>
+                  <span>以 GeoJSON Point 傳送 geom，適合已有明確位置時使用。</span>
                 </span>
               </label>
             </div>
@@ -224,17 +261,12 @@ const submitAnalysis = async () => {
               </div>
 
               <div v-show="form.locationMode === 'pin'" class="mode-panel active">
-                <div class="info-inline">請於地圖指定位置，或輸入經緯度座標，以設定分析中心點。</div>
+                <div class="info-inline">請於地圖指定位置，或輸入 EPSG:4326 GeoJSON Point 作為 geom。</div>
 
-                <div class="grid-2">
-                  <div class="field">
-                    <label for="latitude">緯度</label>
-                    <input id="latitude" v-model="form.latitude" type="number" step="0.0000001" placeholder="例如：25.0330" />
-                  </div>
-                  <div class="field">
-                    <label for="longitude">經度</label>
-                    <input id="longitude" v-model="form.longitude" type="number" step="0.0000001" placeholder="例如：121.5654" />
-                  </div>
+                <div class="field">
+                  <label for="geomText">geom（EPSG:4326 GeoJSON）</label>
+                  <textarea id="geomText" v-model="form.geomText" rows="6" spellcheck="false"></textarea>
+                  <div class="field-note">目前點位：{{ pointCoordinateText }}</div>
                 </div>
 
                 <div class="field">
@@ -243,6 +275,11 @@ const submitAnalysis = async () => {
                   <div class="field-note">建議至少 500 公尺，範圍越大會納入越多周邊資料。</div>
                 </div>
               </div>
+            </div>
+
+            <div class="field">
+              <label for="rangeSize">格網範圍大小（公尺）</label>
+              <input id="rangeSize" v-model="form.rangeSize" type="number" min="100" step="100" />
             </div>
           </div>
 
@@ -318,9 +355,9 @@ const submitAnalysis = async () => {
       <div class="map-wrap">
         <LocationMap
           :mode="form.locationMode"
-          :lat="form.latitude || '25.0330'"
-          :lng="form.longitude || '121.5654'"
+          :geom="pinGeometry"
           :radius="radius"
+          @update:geom="updatePinGeometry"
         />
       </div>
     </aside>

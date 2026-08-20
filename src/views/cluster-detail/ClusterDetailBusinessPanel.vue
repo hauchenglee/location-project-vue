@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { formatGeometrySummary } from '@/utils/geoJson'
 
 const props = defineProps({
   vo: {
@@ -40,6 +41,18 @@ const rankMetrics = computed(() => [
 ])
 
 const industries = computed(() => (Array.isArray(props.vo?.industries) ? props.vo.industries : []))
+const businessEntities = computed(() =>
+  industries.value.flatMap((industry) =>
+    Array.isArray(industry.businessEntities)
+      ? industry.businessEntities.map((businessEntity) => ({
+          ...businessEntity,
+          rowKey: businessEntity.id || `${industry.industryCode}-${businessEntity.businessEntityName}`,
+          industryCode: businessEntity.industryCode || industry.industryCode,
+          industryName: businessEntity.industryName || industry.name,
+        }))
+      : [],
+  ),
+)
 </script>
 
 <template>
@@ -74,6 +87,7 @@ const industries = computed(() => (Array.isArray(props.vo?.industries) ? props.v
             <tr>
               <th>產業</th>
               <th>代碼</th>
+              <th>大類</th>
               <th>店家數</th>
               <th>層級</th>
               <th>版本</th>
@@ -81,7 +95,7 @@ const industries = computed(() => (Array.isArray(props.vo?.industries) ? props.v
           </thead>
           <tbody>
             <tr v-if="!industries.length">
-              <td colspan="5" class="empty-cell">目前沒有商業產業資料。</td>
+              <td colspan="6" class="empty-cell">目前沒有商業產業資料。</td>
             </tr>
             <tr v-for="industry in industries" :key="industry.industryId || industry.industryCode">
               <td>
@@ -89,9 +103,51 @@ const industries = computed(() => (Array.isArray(props.vo?.industries) ? props.v
                 <span class="sub">{{ industry.definition || '-' }}</span>
               </td>
               <td>{{ industry.industryCode || '-' }}</td>
+              <td>{{ industry.sectionCode || '-' }}</td>
               <td>{{ formatInteger(industry.businessCount) }}</td>
               <td>{{ industry.levelNo ?? '-' }}</td>
               <td>{{ industry.revision || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cluster-data-section">
+      <div class="cluster-data-section-head">
+        <h3>
+          店家明細
+          <span class="cluster-data-kicker raw">BusinessEntityVo</span>
+        </h3>
+      </div>
+
+      <div class="table-wrap cluster-business-table">
+        <table>
+          <thead>
+            <tr>
+              <th>店家</th>
+              <th>地址</th>
+              <th>行政區</th>
+              <th>產業</th>
+              <th>geom</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!businessEntities.length">
+              <td colspan="5" class="empty-cell">目前沒有店家明細資料。</td>
+            </tr>
+            <tr v-for="businessEntity in businessEntities" :key="businessEntity.rowKey">
+              <td>
+                <span class="case-id">{{ businessEntity.businessEntityName || '-' }}</span>
+                <span class="sub">ID：{{ businessEntity.id || '-' }}</span>
+              </td>
+              <td>{{ businessEntity.address || '-' }}</td>
+              <td>{{ [businessEntity.countyName, businessEntity.townName].filter(Boolean).join(' / ') || '-' }}</td>
+              <td>
+                {{ businessEntity.industryName || '-' }}
+                <span class="sub">{{ businessEntity.industryCode || '-' }}</span>
+              </td>
+              <td>{{ formatGeometrySummary(businessEntity.geom) }}</td>
             </tr>
           </tbody>
         </table>

@@ -1,25 +1,24 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet'
+import { createPointGeometry, getPointCoordinates } from '@/utils/geoJson'
 
 const props = defineProps({
   mode: {
     type: String,
     required: true,
   },
-  lat: {
-    type: [String, Number],
-    default: '25.0330',
-  },
-  lng: {
-    type: [String, Number],
-    default: '121.5654',
+  geom: {
+    type: Object,
+    default: null,
   },
   radius: {
     type: [String, Number],
     default: 500,
   },
 })
+
+const emit = defineEmits(['update:geom'])
 
 const mapEl = ref(null)
 let map
@@ -30,11 +29,10 @@ const defaultCenter = [25.033, 121.5654]
 const districtCenter = [25.0262, 121.5435]
 
 const currentCenter = computed(() => {
-  const lat = Number.parseFloat(props.lat)
-  const lng = Number.parseFloat(props.lng)
+  const coordinates = getPointCoordinates(props.geom)
 
-  if (props.mode === 'pin' && Number.isFinite(lat) && Number.isFinite(lng)) {
-    return [lat, lng]
+  if (props.mode === 'pin' && coordinates) {
+    return [coordinates.latitude, coordinates.longitude]
   }
 
   return props.mode === 'district' ? districtCenter : defaultCenter
@@ -66,6 +64,12 @@ const updateLayers = () => {
   }
 }
 
+const updatePointGeometry = ({ lat, lng }) => {
+  if (props.mode !== 'pin') return
+
+  emit('update:geom', createPointGeometry(lng, lat))
+}
+
 onMounted(async () => {
   await nextTick()
 
@@ -78,6 +82,10 @@ onMounted(async () => {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map)
+
+  map.on('click', (event) => {
+    updatePointGeometry(event.latlng)
+  })
 
   circle = L.circle(currentCenter.value, {
     radius: normalizedRadius.value,
@@ -96,7 +104,7 @@ onMounted(async () => {
   }, 80)
 })
 
-watch(() => [props.mode, props.lat, props.lng, props.radius], updateLayers)
+watch(() => [props.mode, props.geom, props.radius], updateLayers, { deep: true })
 
 onBeforeUnmount(() => {
   map?.remove()

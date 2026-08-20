@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
+import { formatGeometrySummary } from '@/utils/geoJson'
 
 const props = defineProps({
   analysisId: {
@@ -99,11 +100,8 @@ const formatDateTime = (value) => {
 
 const formatLocation = (analysis) => {
   const district = [analysis.countyName, analysis.townName].filter(Boolean).join(' / ')
-  const coordinate = [analysis.latitude, analysis.longitude]
-    .filter((value) => value !== null && value !== undefined && value !== '')
-    .join(', ')
 
-  return district || coordinate || '-'
+  return district || formatGeometrySummary(analysis.geom)
 }
 
 watch(() => props.analysisId, () => {
@@ -186,13 +184,14 @@ onMounted(loadAnalysisDetail)
                   <th>綜合</th>
                   <th>商業</th>
                   <th>人口</th>
+                  <th>人潮</th>
                   <th>交通</th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!metricClusterRows.length">
-                  <td colspan="6" class="empty-cell">目前沒有生活圈資料。</td>
+                  <td colspan="7" class="empty-cell">目前沒有生活圈資料。</td>
                 </tr>
                 <tr
                   v-for="metricCluster in metricClusterRows"
@@ -208,6 +207,7 @@ onMounted(loadAnalysisDetail)
                   <td>{{ metricCluster.compositeScoreDisplay }}</td>
                   <td>{{ toScore(metricCluster.businessScore) }}</td>
                   <td>{{ toScore(metricCluster.populationScore) }}</td>
+                  <td>{{ toScore(metricCluster.peopleScore) }}</td>
                   <td>{{ toScore(metricCluster.transitScore) }}</td>
                   <td>
                     <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', metricCluster, baseAnalysis)">

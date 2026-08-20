@@ -481,7 +481,6 @@ button:disabled {
   max-width: 520px;
 }
 
-.cluster-rating,
 .cluster-metric {
   min-height: 32px;
   display: inline-flex;
@@ -496,13 +495,6 @@ button:disabled {
   font-weight: 700;
 }
 
-.cluster-rating {
-  border-color: rgba(37, 99, 235, 0.14);
-  background: rgba(37, 99, 235, 0.1);
-  color: var(--primary-dark);
-}
-
-.cluster-rating strong,
 .cluster-metric strong {
   color: var(--text);
   font-size: 16px;

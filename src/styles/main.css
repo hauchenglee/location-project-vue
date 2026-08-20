@@ -161,8 +161,7 @@ button:disabled {
 
 .icon-btn:hover,
 .user-btn:hover,
-.btn:hover,
-.mode-card:hover {
+.btn:hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.72);
 }
@@ -916,69 +915,33 @@ button:disabled {
   text-align: center;
 }
 
-.mode-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.mode-item input[type="radio"] {
-  display: none;
-}
-
-.mode-card {
-  min-height: 96px;
-  display: block;
+.location-card {
+  margin-bottom: 14px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.46);
-  cursor: pointer;
-  transition: 0.2s ease;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
-.mode-item input[type="radio"]:checked + .mode-card {
-  border-color: rgba(37, 99, 235, 0.28);
-  background: rgba(37, 99, 235, 0.1);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.1);
+.location-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.mode-card strong {
-  display: block;
-  margin-bottom: 6px;
+.location-card-head strong {
+  color: var(--text);
   font-size: 14px;
+  font-weight: 800;
 }
 
-.mode-card span {
-  display: block;
+.location-card-head span {
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.6;
-}
-
-.mode-panel {
-  display: none;
-  margin-top: 8px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.66);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.36);
-}
-
-.mode-panel.active {
-  display: block;
-}
-
-.info-inline {
-  margin-bottom: 14px;
-  padding: 10px 12px;
-  border: 1px solid rgba(37, 99, 235, 0.08);
-  border-radius: 12px;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1e40af;
-  font-size: 12px;
-  line-height: 1.6;
+  font-weight: 700;
 }
 
 .form-message {
@@ -1126,6 +1089,25 @@ button:disabled {
   min-height: 458px;
   background: rgba(248, 250, 252, 0.88);
   box-shadow: inset 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.map-stage-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.map-dev-state {
+  min-width: min(260px, 100%);
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  border: 1px dashed rgba(100, 116, 139, 0.26);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.48);
+  color: #475569;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .leaflet-stage {
@@ -1402,7 +1384,6 @@ tbody tr:hover {
   .grid-2,
   .grid-4,
   .parameter-grid,
-  .mode-switch,
   .cluster-rank-grid,
   .cluster-rank-grid.three,
   .cluster-rank-grid.single {

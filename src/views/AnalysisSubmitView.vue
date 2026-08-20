@@ -4,12 +4,6 @@ import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
-import {
-  defaultPointGeometry,
-  formatPointCoordinates,
-  parseGeometryText,
-  stringifyGeometry,
-} from '@/utils/geoJson'
 
 const isSubmitting = ref(false)
 const submitError = ref('')
@@ -25,11 +19,8 @@ const initialForm = {
   taskNo: '',
   productName: '',
   industryCode: '',
-  locationMode: 'district',
   countyName: '',
   townName: '',
-  geomText: stringifyGeometry(defaultPointGeometry),
-  radius: 500,
   rangeSize: 500,
   preference: '0.5',
   selectedDayType: 'ALL',
@@ -39,18 +30,9 @@ const initialForm = {
 
 const form = reactive({ ...initialForm })
 
-const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 500))
 const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 100))
 const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
 const townOptions = computed(() => selectedAdminArea.value?.towns || [])
-const pinGeometry = computed(() => {
-  try {
-    return parseGeometryText(form.geomText)
-  } catch {
-    return null
-  }
-})
-const pointCoordinateText = computed(() => formatPointCoordinates(pinGeometry.value))
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -103,35 +85,18 @@ watch(
   },
 )
 
-watch(
-  () => form.locationMode,
-  (mode) => {
-    if (mode === 'pin' && !form.geomText.trim()) {
-      form.geomText = stringifyGeometry(defaultPointGeometry)
-    }
-  },
-)
-
 onMounted(() => {
   loadAdminAreas()
   loadBusinessIndustryCodes()
 })
 
-const updatePinGeometry = (geometry) => {
-  form.geomText = stringifyGeometry(geometry)
-}
-
 const createPayload = () => {
-  const geom = form.locationMode === 'pin' ? parseGeometryText(form.geomText) : null
-
   return {
     taskNo: form.taskNo || null,
     productName: form.productName,
     industryCode: form.industryCode,
-    countyName: form.locationMode === 'district' ? form.countyName || null : null,
-    townName: form.locationMode === 'district' ? form.townName || null : null,
-    geom,
-    radius: form.locationMode === 'pin' ? radius.value : null,
+    countyName: form.countyName || null,
+    townName: form.townName || null,
     rangeSize: rangeSize.value,
     preference: form.preference,
     selectedDayType: form.selectedDayType,
@@ -147,10 +112,6 @@ const submitAnalysis = async () => {
 
   try {
     const payload = createPayload()
-    if (form.locationMode === 'pin' && !payload.geom) {
-      throw new Error('請輸入有效的 EPSG:4326 GeoJSON geom。')
-    }
-
     submitResult.value = await caseApi.submitAnalysis(payload)
   } catch (error) {
     submitError.value = error?.response?.data?.message || error.message || '提交分析失敗'
@@ -204,75 +165,42 @@ const submitAnalysis = async () => {
           <div class="section">
             <div class="section-header">
               <h3>區域設定</h3>
-              <p>設定分析範圍，可用行政區或 EPSG:4326 GeoJSON 作為分析中心。</p>
+              <p>設定分析範圍，系統會以縣市與鄉鎮市區作為分析基準。</p>
             </div>
 
-            <div class="mode-switch">
-              <label class="mode-item">
-                <input v-model="form.locationMode" type="radio" name="locationMode" value="district" />
-                <span class="mode-card">
-                  <strong>依行政區設定</strong>
-                  <span>填寫縣市與鄉鎮市區，適合前期區域探索。</span>
-                </span>
-              </label>
-
-              <label class="mode-item">
-                <input v-model="form.locationMode" type="radio" name="locationMode" value="pin" />
-                <span class="mode-card">
-                  <strong>地圖放圖釘</strong>
-                  <span>以 GeoJSON Point 傳送 geom，適合已有明確位置時使用。</span>
-                </span>
-              </label>
-            </div>
-
-            <div class="mode-panels">
-              <div v-show="form.locationMode === 'district'" class="mode-panel active">
-                <div class="info-inline">請選擇縣市與鄉鎮市區，系統會以該區域作為分析基準。</div>
-
-                <div class="grid-2">
-                  <div class="field">
-                    <label for="countyName">縣市</label>
-                    <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
-                      <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
-                      <option
-                        v-for="area in adminAreas"
-                        :key="area.countyCode || area.countyId || area.countyName"
-                        :value="area.countyName"
-                      >
-                        {{ area.countyName }}
-                      </option>
-                    </select>
-                    <div v-if="adminAreaError" class="field-note">{{ adminAreaError }}</div>
-                  </div>
-                  <div class="field">
-                    <label for="townName">鄉鎮市區</label>
-                    <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
-                      <option value="">請選擇鄉鎮市區</option>
-                      <option
-                        v-for="town in townOptions"
-                        :key="town.townCode || town.townId || town.townName"
-                        :value="town.townName"
-                      >
-                        {{ town.townName }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
+            <div class="location-card">
+              <div class="location-card-head">
+                <strong>依行政區設定</strong>
+                <span>適合前期區域探索</span>
               </div>
 
-              <div v-show="form.locationMode === 'pin'" class="mode-panel active">
-                <div class="info-inline">請於地圖指定位置，或輸入 EPSG:4326 GeoJSON Point 作為 geom。</div>
-
+              <div class="grid-2">
                 <div class="field">
-                  <label for="geomText">geom（EPSG:4326 GeoJSON）</label>
-                  <textarea id="geomText" v-model="form.geomText" rows="6" spellcheck="false"></textarea>
-                  <div class="field-note">目前點位：{{ pointCoordinateText }}</div>
+                  <label for="countyName">縣市</label>
+                  <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
+                    <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
+                    <option
+                      v-for="area in adminAreas"
+                      :key="area.countyCode || area.countyId || area.countyName"
+                      :value="area.countyName"
+                    >
+                      {{ area.countyName }}
+                    </option>
+                  </select>
+                  <div v-if="adminAreaError" class="field-note error">{{ adminAreaError }}</div>
                 </div>
-
                 <div class="field">
-                  <label for="radius">分析範圍（公尺）</label>
-                  <input id="radius" v-model="form.radius" type="number" min="500" step="100" />
-                  <div class="field-note">建議至少 500 公尺，範圍越大會納入越多周邊資料。</div>
+                  <label for="townName">鄉鎮市區</label>
+                  <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
+                    <option value="">請選擇鄉鎮市區</option>
+                    <option
+                      v-for="town in townOptions"
+                      :key="town.townCode || town.townId || town.townName"
+                      :value="town.townName"
+                    >
+                      {{ town.townName }}
+                    </option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -353,12 +281,7 @@ const submitAnalysis = async () => {
 
     <aside class="right">
       <div class="map-wrap">
-        <LocationMap
-          :mode="form.locationMode"
-          :geom="pinGeometry"
-          :radius="radius"
-          @update:geom="updatePinGeometry"
-        />
+        <LocationMap />
       </div>
     </aside>
 

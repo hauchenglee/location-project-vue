@@ -8,29 +8,7 @@ const geometryTypeLabelMap = {
   GeometryCollection: '幾何集合',
 }
 
-export const defaultPointGeometry = {
-  type: 'Point',
-  coordinates: [121.5654, 25.033],
-}
-
-export const parseGeometryText = (value) => {
-  if (!value || !String(value).trim()) return null
-
-  const parsed = JSON.parse(value)
-  return parsed?.type === 'Feature' ? parsed.geometry : parsed
-}
-
-export const stringifyGeometry = (geometry) => {
-  if (!geometry) return ''
-  return JSON.stringify(geometry, null, 2)
-}
-
-export const createPointGeometry = (longitude, latitude) => ({
-  type: 'Point',
-  coordinates: [Number(longitude), Number(latitude)],
-})
-
-export const getPointCoordinates = (geometry) => {
+const getPointCoordinates = (geometry) => {
   const point = geometry?.type === 'Feature' ? geometry.geometry : geometry
   const coordinates = point?.type === 'Point' ? point.coordinates : null
   const longitude = Number(coordinates?.[0])
@@ -43,7 +21,7 @@ export const getPointCoordinates = (geometry) => {
   return { longitude, latitude }
 }
 
-export const formatPointCoordinates = (geometry) => {
+const formatPointCoordinates = (geometry) => {
   const coordinates = getPointCoordinates(geometry)
 
   if (!coordinates) return '-'

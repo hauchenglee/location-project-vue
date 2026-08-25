@@ -392,10 +392,9 @@ onBeforeUnmount(() => {
 .cell-detail-shell {
   min-height: 620px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .cell-map-shell {
@@ -410,8 +409,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid #e8edf3;
+  background: #ffffff;
 }
 
 .cell-map-head h3,
@@ -432,7 +431,7 @@ onBeforeUnmount(() => {
 
 .cell-map-head h3 span,
 .cell-detail-head span {
-  color: #2563eb;
+  color: #2f7df0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0;
@@ -457,17 +456,17 @@ onBeforeUnmount(() => {
 .cell-locate-button {
   min-height: 30px;
   padding: 6px 10px;
-  border: 1px solid rgba(37, 99, 235, 0.16);
-  border-radius: 10px;
-  background: rgba(37, 99, 235, 0.1);
-  color: #1d4ed8;
+  border: 1px solid #cbdffb;
+  border-radius: 8px;
+  background: #edf4ff;
+  color: #1f67d8;
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
 }
 
 .cell-locate-button:hover {
-  background: rgba(37, 99, 235, 0.16);
+  background: #dfeeff;
 }
 
 .cell-locate-button:disabled {
@@ -483,8 +482,8 @@ onBeforeUnmount(() => {
   gap: 14px;
   flex-wrap: wrap;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(248, 250, 252, 0.72);
+  border-bottom: 1px solid #e8edf3;
+  background: #f6f8fb;
 }
 
 .cell-filter-block,
@@ -506,16 +505,16 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   padding: 3px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .cell-filter-toggle button {
   min-height: 30px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   color: #64748b;
   cursor: pointer;
@@ -524,9 +523,9 @@ onBeforeUnmount(() => {
 }
 
 .cell-filter-toggle button.active {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.2);
+  background: #edf4ff;
+  color: #1f67d8;
+  box-shadow: inset 0 0 0 1px #cbdffb;
 }
 
 .cell-heat-legend span {
@@ -563,7 +562,7 @@ onBeforeUnmount(() => {
 
 .cell-map {
   min-height: 560px;
-  background: #eff6ff;
+  background: #f6f8fb;
 }
 
 .cell-detail-shell {
@@ -597,9 +596,9 @@ onBeforeUnmount(() => {
 
 .cell-meta-grid div {
   padding: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #f6f8fb;
 }
 
 .cell-meta-grid dt {
@@ -636,9 +635,9 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .cell-metric-item span {
@@ -654,7 +653,7 @@ onBeforeUnmount(() => {
   align-items: baseline;
   gap: 4px;
   flex-shrink: 0;
-  color: #1e3a8a;
+  color: #1f67d8;
   font-size: 18px;
   font-weight: 900;
 }
@@ -683,7 +682,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.leaflet-control-zoom a) {
-  color: #1e40af;
+  color: #1f67d8;
   font-weight: 900;
 }
 

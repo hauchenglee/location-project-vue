@@ -236,10 +236,9 @@ const selectedAgeGroupDetail = computed(() => {
 
 .population-section,
 .population-data-card {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .population-section {
@@ -258,7 +257,7 @@ const selectedAgeGroupDetail = computed(() => {
 .population-section-kicker {
   display: inline-flex;
   align-items: center;
-  color: #2563eb;
+  color: #2f7df0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0;
@@ -307,9 +306,9 @@ const selectedAgeGroupDetail = computed(() => {
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
-  border: 1px solid rgba(37, 99, 235, 0.14);
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(255, 255, 255, 0.62));
+  border: 1px solid #d9e7fb;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff, #f5f9ff);
 }
 
 .population-rank-card span,
@@ -330,7 +329,7 @@ const selectedAgeGroupDetail = computed(() => {
 .population-rank-card-head small {
   display: inline-flex;
   align-items: center;
-  color: #1e40af;
+  color: #1f67d8;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.4;
@@ -340,7 +339,7 @@ const selectedAgeGroupDetail = computed(() => {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  color: #1e3a8a;
+  color: #1f67d8;
   font-size: 34px;
   font-weight: 900;
   line-height: 1;
@@ -373,9 +372,9 @@ const selectedAgeGroupDetail = computed(() => {
   flex-direction: column;
   justify-content: space-between;
   padding: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  background: #f6f8fb;
 }
 
 .population-structure-item strong {
@@ -414,11 +413,11 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .population-legend .male::before {
-  background: #2563eb;
+  background: #2f7df0;
 }
 
 .population-legend .female::before {
-  background: #db2777;
+  background: #ff9f1c;
 }
 
 .age-bars {
@@ -453,11 +452,11 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .age-bar.male {
-  background: #2563eb;
+  background: #2f7df0;
 }
 
 .age-bar.female {
-  background: #db2777;
+  background: #ff9f1c;
 }
 
 .age-bar-row strong {

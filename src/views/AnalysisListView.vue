@@ -143,13 +143,11 @@ onMounted(() => {
         <div class="content-shell">
           <div class="page-title">
             <h2>分析列表</h2>
-          <p>透過查詢條件快速篩選分析任務，並從列表進入分析總覽與生活圈比較。</p>
           </div>
 
         <section class="section">
           <div class="section-header">
             <h3>搜尋條件</h3>
-            <p>可依案件號碼、商品名稱、產業類別與處理狀態進行篩選。</p>
           </div>
 
           <div class="grid-4">
@@ -196,7 +194,6 @@ onMounted(() => {
         <section class="section">
           <div class="section-header">
             <h3>分析列表</h3>
-            <p>以下列表顯示符合條件的分析案件。</p>
           </div>
 
           <div v-if="loadError" class="form-message error">{{ loadError }}</div>

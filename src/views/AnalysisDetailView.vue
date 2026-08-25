@@ -141,7 +141,6 @@ onMounted(loadAnalysisDetail)
           <div class="section-header parameter-header">
             <div>
               <h3>分析參數</h3>
-              <p>商品、區域、範圍與觀察情境。</p>
             </div>
             <button class="btn-sm parameter-toggle" type="button" @click="isParameterOpen = !isParameterOpen">
               {{ isParameterOpen ? '收合' : '展開' }}
@@ -179,7 +178,6 @@ onMounted(loadAnalysisDetail)
         <section class="section cluster-table-section">
           <div class="section-header">
             <h3>生活圈列表</h3>
-            <p>依分數列表顯示各生活圈評估結果。</p>
           </div>
 
           <div class="table-wrap cluster-scroll-table interactive-table">

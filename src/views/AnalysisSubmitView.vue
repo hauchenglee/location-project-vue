@@ -128,13 +128,11 @@ const submitAnalysis = async () => {
         <div class="form-shell">
           <div class="page-title">
             <h2>提交分析</h2>
-            <p>填寫商品、區域與人口條件，建立新的選址分析。</p>
           </div>
 
           <div class="section">
             <div class="section-header">
               <h3>分析基本資料</h3>
-              <p>輸入案件識別資訊與商品內容。</p>
             </div>
 
             <div class="grid-2">
@@ -160,48 +158,38 @@ const submitAnalysis = async () => {
               <div v-if="businessIndustryCodeError" class="field-note error">{{ businessIndustryCodeError }}</div>
               <div v-else class="field-note">選擇最接近的產業類別，讓分析結果更貼近實際經營情境。</div>
             </div>
-          </div>
 
-          <div class="section">
             <div class="section-header">
               <h3>區域設定</h3>
-              <p>設定分析範圍，系統會以縣市與鄉鎮市區作為分析基準。</p>
             </div>
 
-            <div class="location-card">
-              <div class="location-card-head">
-                <strong>依行政區設定</strong>
-                <span>適合前期區域探索</span>
+            <div class="grid-2">
+              <div class="field">
+                <label for="countyName">縣市</label>
+                <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
+                  <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
+                  <option
+                    v-for="area in adminAreas"
+                    :key="area.countyCode || area.countyId || area.countyName"
+                    :value="area.countyName"
+                  >
+                    {{ area.countyName }}
+                  </option>
+                </select>
+                <div v-if="adminAreaError" class="field-note error">{{ adminAreaError }}</div>
               </div>
-
-              <div class="grid-2">
-                <div class="field">
-                  <label for="countyName">縣市</label>
-                  <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
-                    <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
-                    <option
-                      v-for="area in adminAreas"
-                      :key="area.countyCode || area.countyId || area.countyName"
-                      :value="area.countyName"
-                    >
-                      {{ area.countyName }}
-                    </option>
-                  </select>
-                  <div v-if="adminAreaError" class="field-note error">{{ adminAreaError }}</div>
-                </div>
-                <div class="field">
-                  <label for="townName">鄉鎮市區</label>
-                  <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
-                    <option value="">請選擇鄉鎮市區</option>
-                    <option
-                      v-for="town in townOptions"
-                      :key="town.townCode || town.townId || town.townName"
-                      :value="town.townName"
-                    >
-                      {{ town.townName }}
-                    </option>
-                  </select>
-                </div>
+              <div class="field">
+                <label for="townName">鄉鎮市區</label>
+                <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
+                  <option value="">請選擇鄉鎮市區</option>
+                  <option
+                    v-for="town in townOptions"
+                    :key="town.townCode || town.townId || town.townName"
+                    :value="town.townName"
+                  >
+                    {{ town.townName }}
+                  </option>
+                </select>
               </div>
             </div>
 
@@ -209,12 +197,9 @@ const submitAnalysis = async () => {
               <label for="rangeSize">格網範圍大小（公尺）</label>
               <input id="rangeSize" v-model="form.rangeSize" type="number" min="100" step="100" />
             </div>
-          </div>
 
-          <div class="section">
             <div class="section-header">
               <h3>情境條件</h3>
-              <p>設定分析偏好、日別、時段與目標年齡層。</p>
             </div>
 
             <div class="grid-2">

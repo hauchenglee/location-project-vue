@@ -31,7 +31,7 @@ const metricGroups = [
     key: 'heat',
     title: '熱力',
     metrics: [
-      { key: 'smoothedCompositeRank', label: '平滑後綜合模型強度' },
+      { key: 'compositeRank', label: '綜合模型強度' },
     ],
   },
   {
@@ -143,7 +143,7 @@ const getCellStyle = (cellId, cell) => {
     return {
       color: '#0f172a',
       weight: 3,
-      fillColor: getHeatColor(cell?.smoothedCompositeRank),
+      fillColor: getHeatColor(cell?.compositeRank),
       fillOpacity: 0.88,
     }
   }
@@ -152,7 +152,7 @@ const getCellStyle = (cellId, cell) => {
     return {
       color: '#0f172a',
       weight: 3,
-      fillColor: getHeatColor(cell?.smoothedCompositeRank),
+      fillColor: getHeatColor(cell?.compositeRank),
       fillOpacity: 0.72,
     }
   }
@@ -160,7 +160,7 @@ const getCellStyle = (cellId, cell) => {
   return {
     color: '#334155',
     weight: 1.4,
-    fillColor: getHeatColor(cell?.smoothedCompositeRank),
+    fillColor: getHeatColor(cell?.compositeRank),
     fillOpacity: cell?.metricClusterId ? 0.5 : 0.24,
   }
 }
@@ -329,8 +329,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="cell-heat-legend" aria-label="smoothedCompositeRank 熱力圖例">
-          <strong>smoothedCompositeRank</strong>
+        <div class="cell-heat-legend" aria-label="compositeRank 熱力圖例">
+          <strong>compositeRank</strong>
           <span><i class="heat-80"></i>80-85</span>
           <span><i class="heat-85"></i>85-90</span>
           <span><i class="heat-90"></i>90-95</span>

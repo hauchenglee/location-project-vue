@@ -89,7 +89,7 @@ const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
 const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
 const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
 
-const formatRadius = (item) => item.radius ?? '-'
+const formatMeter = (value) => (value !== null && value !== undefined && value !== '' ? `${value} 公尺` : '-')
 
 const loadCases = async () => {
   isLoading.value = true
@@ -250,7 +250,8 @@ onMounted(() => {
                   </td>
                   <td>{{ formatGeometrySummary(analysis.geom) }}</td>
                   <td>
-                    {{ formatRadius(analysis) }} 公尺
+                    {{ formatMeter(analysis.radius) }}
+                    <span class="sub">格網：{{ formatMeter(analysis.rangeSize) }}</span>
                     <span class="sub">偏好：{{ analysis.preference || '-' }}</span>
                   </td>
                   <td>

@@ -47,8 +47,6 @@ const businessEntities = computed(() =>
       ? industry.businessEntities.map((businessEntity) => ({
           ...businessEntity,
           rowKey: businessEntity.id || `${industry.industryCode}-${businessEntity.businessEntityName}`,
-          industryCode: businessEntity.industryCode || industry.industryCode,
-          industryName: businessEntity.industryName || industry.name,
         }))
       : [],
   ),
@@ -129,12 +127,15 @@ const businessEntities = computed(() =>
               <th>地址</th>
               <th>行政區</th>
               <th>產業</th>
+              <th>產業 1</th>
+              <th>產業 2</th>
+              <th>產業 3</th>
               <th>geom</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!businessEntities.length">
-              <td colspan="5" class="empty-cell">目前沒有店家明細資料。</td>
+              <td colspan="8" class="empty-cell">目前沒有店家明細資料。</td>
             </tr>
             <tr v-for="businessEntity in businessEntities" :key="businessEntity.rowKey">
               <td>
@@ -146,6 +147,18 @@ const businessEntities = computed(() =>
               <td>
                 {{ businessEntity.industryName || '-' }}
                 <span class="sub">{{ businessEntity.industryCode || '-' }}</span>
+              </td>
+              <td>
+                {{ businessEntity.industryName1 || '-' }}
+                <span class="sub">{{ businessEntity.industryCode1 || '-' }}</span>
+              </td>
+              <td>
+                {{ businessEntity.industryName2 || '-' }}
+                <span class="sub">{{ businessEntity.industryCode2 || '-' }}</span>
+              </td>
+              <td>
+                {{ businessEntity.industryName3 || '-' }}
+                <span class="sub">{{ businessEntity.industryCode3 || '-' }}</span>
               </td>
               <td>{{ formatGeometrySummary(businessEntity.geom) }}</td>
             </tr>

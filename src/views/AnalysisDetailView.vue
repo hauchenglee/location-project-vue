@@ -55,6 +55,8 @@ const toScore = (value) => {
 }
 
 const analysisRadius = computed(() => baseAnalysis.value.radius ?? null)
+const analysisRangeSize = computed(() => baseAnalysis.value.rangeSize ?? null)
+const formatMeter = (value) => (value !== null && value !== undefined && value !== '' ? `${value} 公尺` : '-')
 
 const metricClusterRows = computed(() => {
   return metricClusterList.value.map((metricCluster, index) => {
@@ -157,7 +159,11 @@ onMounted(loadAnalysisDetail)
             </div>
             <div class="field readonly-field">
               <label>分析範圍</label>
-              <div>{{ analysisRadius ? `${analysisRadius} 公尺` : '-' }}</div>
+              <div>{{ formatMeter(analysisRadius) }}</div>
+            </div>
+            <div class="field readonly-field">
+              <label>格網範圍大小</label>
+              <div>{{ formatMeter(analysisRangeSize) }}</div>
             </div>
             <div class="field readonly-field">
               <label>觀察情境</label>

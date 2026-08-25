@@ -37,7 +37,7 @@ const expandedCodes = ref(new Set())
 
 const normalizeOption = (option) => {
   const industryCode = String(option.industryCode || '').trim()
-  const levelNo = Number(option.levelNo ?? option.level_no ?? 0)
+  const levelNo = Number(option.levelNo ?? 0)
 
   return {
     ...option,
@@ -45,7 +45,7 @@ const normalizeOption = (option) => {
     apiIndustryCode: normalizeIndustryCodeForApi(industryCode),
     name: option.name || '',
     definition: option.definition || '',
-    sectionCode: option.sectionCode || option.section_code || '',
+    sectionCode: option.sectionCode || '',
     levelNo,
     children: [],
   }

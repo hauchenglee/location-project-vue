@@ -491,15 +491,39 @@ button:disabled {
   z-index: 90;
 }
 
+.create-layout .form-shell > .section > .section-header {
+  width: max-content;
+  max-width: 100%;
+  margin: 30px 0 20px;
+}
+
+.create-layout .form-shell > .section > .section-header:first-child {
+  margin-top: 0;
+}
+
 .section-header {
   margin-bottom: 18px;
 }
 
 .section-header h3 {
+  position: relative;
+  display: inline-block;
   margin: 0;
+  padding-bottom: 10px;
   color: #111318;
   font-size: 16px;
   font-weight: 850;
+}
+
+.create-layout .form-shell > .section > .section-header h3::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #08090d;
 }
 
 .section-header p {

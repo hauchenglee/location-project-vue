@@ -13,7 +13,6 @@ const props = defineProps({
 
 const emit = defineEmits(['back', 'view-cluster'])
 
-const isParameterOpen = ref(false)
 const detailAnalysis = ref(null)
 const metricClusterList = ref([])
 const isLoading = ref(false)
@@ -54,10 +53,6 @@ const toScore = (value) => {
   return Number.isFinite(score) ? Math.round(score) : 0
 }
 
-const analysisRadius = computed(() => baseAnalysis.value.radius ?? null)
-const analysisRangeSize = computed(() => baseAnalysis.value.rangeSize ?? null)
-const formatMeter = (value) => (value !== null && value !== undefined && value !== '' ? `${value} 公尺` : '-')
-
 const metricClusterRows = computed(() => {
   return metricClusterList.value.map((metricCluster, index) => {
     const compositeScoreDisplay = toScore(metricCluster.compositeScore)
@@ -76,23 +71,6 @@ const statusLabelMap = {
   PROCESSING: '處理中',
   PENDING: '待處理',
   FAILED: '失敗',
-}
-
-const dayTypeLabelMap = {
-  ALL: '全部',
-  WEEKDAY: '平日',
-  WEEKEND: '假日',
-}
-
-const timeSlotLabelMap = {
-  ALL: '全部時段',
-  MORNING: '早上',
-  AFTERNOON: '下午',
-  EVENING: '晚上',
-}
-
-const ageGroupLabelMap = {
-  ALL: '全部年齡',
 }
 
 const formatDateTime = (value) => {
@@ -136,44 +114,6 @@ onMounted(loadAnalysisDetail)
         </div>
 
         <div v-if="loadError" class="form-message error">{{ loadError }}</div>
-
-        <section class="section parameter-section">
-          <div class="section-header parameter-header">
-            <div>
-              <h3>分析參數</h3>
-            </div>
-            <button class="btn-sm parameter-toggle" type="button" @click="isParameterOpen = !isParameterOpen">
-              {{ isParameterOpen ? '收合' : '展開' }}
-            </button>
-          </div>
-
-          <div v-show="isParameterOpen" class="grid-4 parameter-grid">
-            <div class="field readonly-field">
-              <label>產業類別</label>
-              <div>{{ baseAnalysis.industryCode || '-' }}</div>
-            </div>
-            <div class="field readonly-field">
-              <label>分析區域</label>
-              <div>{{ formatLocation(baseAnalysis) }}</div>
-            </div>
-            <div class="field readonly-field">
-              <label>分析範圍</label>
-              <div>{{ formatMeter(analysisRadius) }}</div>
-            </div>
-            <div class="field readonly-field">
-              <label>格網範圍大小</label>
-              <div>{{ formatMeter(analysisRangeSize) }}</div>
-            </div>
-            <div class="field readonly-field">
-              <label>觀察情境</label>
-              <div>{{ dayTypeLabelMap[baseAnalysis.selectedDayType] || '-' }} / {{ timeSlotLabelMap[baseAnalysis.selectedTimeSlot] || '-' }}</div>
-            </div>
-            <div class="field readonly-field">
-              <label>目標年齡</label>
-              <div>{{ ageGroupLabelMap[baseAnalysis.selectedAgeGroup] || baseAnalysis.selectedAgeGroup || '-' }}</div>
-            </div>
-          </div>
-        </section>
 
         <section class="section cluster-table-section">
           <div class="section-header">
@@ -227,7 +167,7 @@ onMounted(loadAnalysisDetail)
         <PageLoading
           v-if="isLoading"
           title="正在取得分析詳情"
-          description="系統正在載入分析參數與生活圈列表。"
+          description="系統正在載入生活圈列表。"
         />
       </div>
     </div>

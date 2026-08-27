@@ -27,8 +27,6 @@ const hoveredClusterKey = ref(null)
 
 let map
 const clusterItemEls = new Map()
-let pendingFocusClusterKey = null
-let pendingFocusRetryCount = 0
 
 const MVT_SOURCE_ID = 'location-mvt'
 const TAIWAN_CENTER = [121.5654, 25.033]
@@ -390,33 +388,6 @@ const updateMetricCellPaint = () => {
 
 const isClusterFeature = (feature, clusterKey) => String(feature?.properties?.metric_cluster_id ?? '') === clusterKey
 
-const getClusterBoundsFromLoadedTiles = (clusterKey) => {
-  if (!map?.isStyleLoaded?.()) return null
-
-  const bounds = new maplibregl.LngLatBounds()
-  const features = map.querySourceFeatures(MVT_SOURCE_ID, { sourceLayer: 'metric_cell' })
-
-  features
-    .filter((feature) => isClusterFeature(feature, clusterKey))
-    .forEach((feature) => extendBoundsWithCoordinates(bounds, feature.geometry?.coordinates))
-
-  return bounds.isEmpty() ? null : bounds
-}
-
-const focusClusterOnLoadedTiles = (clusterKey) => {
-  const bounds = getClusterBoundsFromLoadedTiles(clusterKey)
-
-  if (!bounds) return false
-
-  map.fitBounds(bounds, {
-    padding: 54,
-    maxZoom: 15,
-    duration: 520,
-  })
-
-  return true
-}
-
 const focusClusterBounds = (bounds) => {
   if (!map || !bounds) return false
 
@@ -435,33 +406,12 @@ const scheduleClusterFocus = (metricClusterOrKey) => {
   const metricCluster = typeof metricClusterOrKey === 'object'
     ? metricClusterOrKey
     : metricClusterRows.value.find((row) => row.clusterKey === String(metricClusterOrKey))
-  const clusterKey = metricCluster?.clusterKey || String(metricClusterOrKey)
 
-  pendingFocusClusterKey = clusterKey
-  pendingFocusRetryCount = 0
-
-  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster)) || focusClusterOnLoadedTiles(clusterKey)) {
-    pendingFocusClusterKey = null
+  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster))) {
     return
   }
 
   fitAnalysisAreaForClusterSearch()
-}
-
-const retryPendingClusterFocus = () => {
-  if (!pendingFocusClusterKey) return
-
-  const metricCluster = metricClusterRows.value.find((row) => row.clusterKey === pendingFocusClusterKey)
-
-  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster)) || focusClusterOnLoadedTiles(pendingFocusClusterKey)) {
-    pendingFocusClusterKey = null
-    return
-  }
-
-  pendingFocusRetryCount += 1
-  if (pendingFocusRetryCount > 8) {
-    pendingFocusClusterKey = null
-  }
 }
 
 const findMetricClusterByFeature = (feature) => {
@@ -503,8 +453,6 @@ const initializeMap = async () => {
     updateMetricCellPaint()
     if (selectedClusterKey.value) scheduleClusterFocus(selectedClusterKey.value)
   })
-
-  map.on('idle', retryPendingClusterFocus)
 
   map.on('click', 'metric-cell-fill', (event) => {
     const metricCluster = findMetricClusterByFeature(event.features?.[0])
@@ -555,7 +503,6 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   map?.remove()
   map = null
-  pendingFocusClusterKey = null
   clusterItemEls.clear()
 })
 </script>

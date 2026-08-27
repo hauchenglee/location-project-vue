@@ -58,11 +58,6 @@ export const caseApi = {
     return unwrapResponse(response)
   },
 
-  async listMetricCells(payload) {
-    const response = await apiClient.post('/api/cell/list', payload)
-    return unwrapResponse(response) || []
-  },
-
   async submitAnalysis(payload) {
     const response = await apiClient.post('/api/analysis/submit', payload)
     return unwrapResponse(response)

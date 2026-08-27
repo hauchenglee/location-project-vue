@@ -6,7 +6,6 @@ import ClusterDetailBusinessPanel from '@/views/cluster-detail/ClusterDetailBusi
 import ClusterDetailPopulationPanel from '@/views/cluster-detail/ClusterDetailPopulationPanel.vue'
 import ClusterDetailPeoplePanel from '@/views/cluster-detail/ClusterDetailPeoplePanel.vue'
 import ClusterDetailTransitPanel from '@/views/cluster-detail/ClusterDetailTransitPanel.vue'
-import ClusterDetailCellPenel from '@/views/cluster-detail/ClusterDetailCellPenel.vue'
 
 const props = defineProps({
   analysisId: {
@@ -38,15 +37,6 @@ const clusterTabs = [
   { key: 'population', label: '人口', component: ClusterDetailPopulationPanel, loader: caseApi.getPopulation },
   { key: 'people', label: '人潮', component: ClusterDetailPeoplePanel, loader: caseApi.getPeople },
   { key: 'transit', label: '交通', component: ClusterDetailTransitPanel, loader: caseApi.getTransit },
-  {
-    key: 'cell',
-    label: '空間熱點',
-    component: ClusterDetailCellPenel,
-    loader: caseApi.listMetricCells,
-    buildRequest: () => ({
-      analysisId: props.analysisId,
-    }),
-  },
 ]
 
 const activeTabConfig = computed(() => clusterTabs.find((tab) => tab.key === activeTab.value) || clusterTabs[0])

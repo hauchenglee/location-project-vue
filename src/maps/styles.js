@@ -31,6 +31,6 @@ export const createClusterHeatmapStyle = ({ analysisId, metricClusterId }) => ({
   layers: [
     backgroundLayer(),
     ...adminBoundaryLayers(),
-    ...metricCellHeatmapLayers({ metricClusterId }),
+    ...metricCellHeatmapLayers(),
   ],
 })

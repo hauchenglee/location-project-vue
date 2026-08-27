@@ -1,21 +1,14 @@
 import { MVT_LAYERS, MVT_SOURCE_ID } from '@/maps/constants'
 import { compositeRankStepExpression } from '@/maps/scales/compositeRankScale'
 
-const metricClusterFilterExpression = (metricClusterId) => [
-  '==',
-  ['to-string', ['get', 'metric_cluster_id']],
-  String(metricClusterId || ''),
-]
-
-export const metricCellHeatmapLayers = ({ metricClusterId }) => [
+export const metricCellHeatmapLayers = () => [
   {
     id: 'metric-cell-heatmap-fill',
     type: 'fill',
     source: MVT_SOURCE_ID,
     'source-layer': MVT_LAYERS.metricCell,
     minzoom: 8,
-    maxzoom: 23,
-    filter: metricClusterFilterExpression(metricClusterId),
+    maxzoom: 22,
     paint: {
       'fill-color': compositeRankStepExpression(),
       'fill-opacity': 0.66,
@@ -27,8 +20,7 @@ export const metricCellHeatmapLayers = ({ metricClusterId }) => [
     source: MVT_SOURCE_ID,
     'source-layer': MVT_LAYERS.metricCell,
     minzoom: 8,
-    maxzoom: 23,
-    filter: metricClusterFilterExpression(metricClusterId),
+    maxzoom: 22,
     paint: {
       'line-color': '#ffffff',
       'line-width': 0.32,

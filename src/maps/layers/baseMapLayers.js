@@ -27,7 +27,7 @@ export const adminBoundaryLayers = () => [
     source: MVT_SOURCE_ID,
     'source-layer': MVT_LAYERS.adminCounty,
     minzoom: 0,
-    maxzoom: 13,
+    maxzoom: 12,
     paint: {
       'line-color': '#9aa8b8',
       'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.6, 11, 1.2],
@@ -39,7 +39,7 @@ export const adminBoundaryLayers = () => [
     source: MVT_SOURCE_ID,
     'source-layer': MVT_LAYERS.adminTown,
     minzoom: 8,
-    maxzoom: 15,
+    maxzoom: 14,
     paint: {
       'line-color': '#c0cad6',
       'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.3, 13, 0.9],

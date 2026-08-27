@@ -20,7 +20,7 @@ export const useClusterMarkers = ({ map, onSelect }) => {
 
         const element = document.createElement('button')
         element.type = 'button'
-        element.className = `cluster-locator-marker${String(metricCluster.id) === String(selectedMetricClusterId) ? ' active' : ''}`
+        element.className = `cluster-locator-marker${Number(metricCluster.id) === Number(selectedMetricClusterId) ? ' active' : ''}`
         element.textContent = metricCluster.sequence
         element.setAttribute('aria-label', `選取${metricCluster.displayName}`)
         element.addEventListener('click', (event) => {

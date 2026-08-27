@@ -118,7 +118,7 @@ const focusCluster = (metricClusterOrKey, options = {}) => {
 
   const metricCluster = typeof metricClusterOrKey === 'object'
     ? metricClusterOrKey
-    : props.metricClusters.find((cluster) => String(cluster.id) === String(metricClusterOrKey))
+    : props.metricClusters.find((cluster) => Number(cluster.id) === Number(metricClusterOrKey))
   const bounds = getClusterBounds(metricCluster)
   const duration = options.animate === false ? 0 : 520
 
@@ -135,8 +135,8 @@ const focusCluster = (metricClusterOrKey, options = {}) => {
 }
 
 const findClusterByFeature = (feature) => {
-  const metricClusterId = String(feature?.properties?.id ?? '')
-  return props.metricClusters.find((cluster) => String(cluster.id) === metricClusterId)
+  const metricClusterId = Number(feature?.properties?.id)
+  return props.metricClusters.find((cluster) => Number(cluster.id) === metricClusterId)
 }
 
 const refreshMap = (options = {}) => {
@@ -179,7 +179,7 @@ const initializeMap = async () => {
 
   mapInstance.on('mousemove', 'cluster-footprint-fill', (event) => {
     mapInstance.getCanvas().style.cursor = 'pointer'
-    hoveredMetricClusterId.value = String(event.features?.[0]?.properties?.id ?? '')
+    hoveredMetricClusterId.value = event.features?.[0]?.properties?.id ?? null
   })
 
   mapInstance.on('mouseleave', 'cluster-footprint-fill', () => {

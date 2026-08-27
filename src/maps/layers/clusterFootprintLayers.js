@@ -3,10 +3,10 @@ import { CLUSTER_LOCATOR_COLORS, MVT_LAYERS, MVT_SOURCE_ID } from '@/maps/consta
 export const clusterFootprintColorExpression = (metricClusters) => {
   if (!metricClusters.length) return '#2563eb'
 
-  const expression = ['match', ['to-string', ['get', 'id']]]
+  const expression = ['match', ['get', 'id']]
 
   metricClusters.forEach((metricCluster, index) => {
-    expression.push(String(metricCluster.id), CLUSTER_LOCATOR_COLORS[index % CLUSTER_LOCATOR_COLORS.length])
+    expression.push(metricCluster.id, CLUSTER_LOCATOR_COLORS[index % CLUSTER_LOCATOR_COLORS.length])
   })
 
   expression.push('#2563eb')
@@ -14,8 +14,8 @@ export const clusterFootprintColorExpression = (metricClusters) => {
 }
 
 export const clusterFootprintLayers = ({ metricClusters, selectedMetricClusterId, hoveredMetricClusterId }) => {
-  const selected = ['==', ['to-string', ['get', 'id']], String(selectedMetricClusterId || '')]
-  const hovered = ['==', ['to-string', ['get', 'id']], String(hoveredMetricClusterId || '')]
+  const selected = ['==', ['get', 'id'], selectedMetricClusterId]
+  const hovered = ['==', ['get', 'id'], hoveredMetricClusterId]
 
   return [
     {
@@ -24,7 +24,7 @@ export const clusterFootprintLayers = ({ metricClusters, selectedMetricClusterId
       source: MVT_SOURCE_ID,
       'source-layer': MVT_LAYERS.metricCluster,
       minzoom: 8,
-      maxzoom: 23,
+      maxzoom: 22,
       paint: {
         'fill-color': [
           'case',
@@ -43,7 +43,7 @@ export const clusterFootprintLayers = ({ metricClusters, selectedMetricClusterId
       source: MVT_SOURCE_ID,
       'source-layer': MVT_LAYERS.metricCluster,
       minzoom: 8,
-      maxzoom: 23,
+      maxzoom: 22,
       paint: {
         'line-color': ['case', selected, '#111827', hovered, '#1f2937', '#ffffff'],
         'line-width': ['case', selected, 1.8, hovered, 1.4, 0.8],

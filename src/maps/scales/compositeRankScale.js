@@ -27,7 +27,7 @@ export const compositeRankStepExpression = (propertyName = 'composite_rank') => 
 
   return [
     'step',
-    ['to-number', ['get', propertyName], 0],
+    ['coalesce', ['get', propertyName], 0],
     defaultStop[1],
     ...stops.flatMap(([score, color]) => [score, color]),
   ]

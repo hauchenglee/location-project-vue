@@ -5,8 +5,12 @@ export const getApiUrl = (path) => {
 
 export const getMapTileUrl = ({ analysisId, metricClusterId } = {}) => {
   const params = new URLSearchParams()
-  if (analysisId) params.set('analysisId', analysisId)
-  if (metricClusterId) params.set('metricClusterId', metricClusterId)
+  if (analysisId !== null && analysisId !== undefined && analysisId !== '') {
+    params.set('analysisId', analysisId)
+  }
+  if (metricClusterId !== null && metricClusterId !== undefined && metricClusterId !== '') {
+    params.set('metricClusterId', metricClusterId)
+  }
 
   const query = params.toString()
   return getApiUrl(`/api/map/tiles/{z}/{x}/{y}.mvt${query ? `?${query}` : ''}`)

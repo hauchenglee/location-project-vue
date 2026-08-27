@@ -22,7 +22,7 @@ export const COMPOSITE_RANK_STOPS = [
   [100, '#560307'],
 ]
 
-export const compositeRankStepExpression = (propertyName = 'composite_rank') => {
+export const compositeRankStepExpression = (propertyName) => {
   const [defaultStop, ...stops] = COMPOSITE_RANK_STOPS
 
   return [

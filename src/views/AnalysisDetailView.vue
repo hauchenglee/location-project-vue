@@ -26,6 +26,7 @@ const selectedClusterKey = ref(null)
 const hoveredClusterKey = ref(null)
 
 let map
+let mapResizeObserver
 const clusterItemEls = new Map()
 
 const MVT_SOURCE_ID = 'location-mvt'
@@ -196,16 +197,28 @@ const fitAllClusters = () => {
   })
 }
 
-const fitAnalysisAreaForClusterSearch = () => {
+const resizeMapAfterLayout = async () => {
+  if (!map) return
+
+  await nextTick()
+  map.resize()
+  requestAnimationFrame(() => {
+    map?.resize()
+    requestAnimationFrame(() => map?.resize())
+  })
+}
+
+const fitAnalysisAreaForClusterSearch = (options = {}) => {
   if (!map) return
 
   const analysisBounds = getGeometryBounds(baseAnalysis.value.geom)
+  const duration = options.animate === false ? 0 : 360
 
   if (analysisBounds) {
     map.fitBounds(analysisBounds, {
       padding: 72,
       maxZoom: 14,
-      duration: 360,
+      duration,
     })
     return
   }
@@ -213,7 +226,7 @@ const fitAnalysisAreaForClusterSearch = () => {
   map.easeTo({
     center: TAIWAN_CENTER,
     zoom: CLUSTER_SEARCH_ZOOM,
-    duration: 360,
+    duration,
   })
 }
 
@@ -388,30 +401,31 @@ const updateMetricCellPaint = () => {
 
 const isClusterFeature = (feature, clusterKey) => String(feature?.properties?.metric_cluster_id ?? '') === clusterKey
 
-const focusClusterBounds = (bounds) => {
+const focusClusterBounds = (bounds, options = {}) => {
   if (!map || !bounds) return false
+  const duration = options.animate === false ? 0 : 520
 
   map.fitBounds(bounds, {
     padding: 54,
     maxZoom: 15,
-    duration: 520,
+    duration,
   })
 
   return true
 }
 
-const scheduleClusterFocus = (metricClusterOrKey) => {
+const scheduleClusterFocus = (metricClusterOrKey, options = {}) => {
   if (!map || !metricClusterOrKey) return
 
   const metricCluster = typeof metricClusterOrKey === 'object'
     ? metricClusterOrKey
     : metricClusterRows.value.find((row) => row.clusterKey === String(metricClusterOrKey))
 
-  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster))) {
+  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster), options)) {
     return
   }
 
-  fitAnalysisAreaForClusterSearch()
+  fitAnalysisAreaForClusterSearch(options)
 }
 
 const findMetricClusterByFeature = (feature) => {
@@ -448,10 +462,19 @@ const initializeMap = async () => {
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
 
-  map.on('load', () => {
-    fitAllClusters()
+  mapResizeObserver = new ResizeObserver(() => {
+    map?.resize()
+  })
+  mapResizeObserver.observe(mapEl.value)
+
+  map.on('load', async () => {
+    await resizeMapAfterLayout()
+    if (selectedClusterKey.value) {
+      scheduleClusterFocus(selectedClusterKey.value, { animate: false })
+    } else {
+      fitAllClusters()
+    }
     updateMetricCellPaint()
-    if (selectedClusterKey.value) scheduleClusterFocus(selectedClusterKey.value)
   })
 
   map.on('click', 'metric-cell-fill', (event) => {
@@ -501,6 +524,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  mapResizeObserver?.disconnect()
+  mapResizeObserver = null
   map?.remove()
   map = null
   clusterItemEls.clear()

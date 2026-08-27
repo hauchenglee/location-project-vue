@@ -58,14 +58,11 @@ const ageGroupLabelMap = {
 
 const analysisItems = computed(() => analyses.value)
 
-const normalizeIndustryCodeForApi = (industryCode) => String(industryCode || '').replace(/[^0-9A-Za-z]/g, '')
-
 const filteredAnalyses = computed(() =>
   analysisItems.value.filter((item) => {
     const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
     const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
-    const matchesIndustryCode =
-      !filters.industryCode || normalizeIndustryCodeForApi(item.industryCode) === filters.industryCode
+    const matchesIndustryCode = !filters.industryCode || item.industryCode === filters.industryCode
     const matchesStatus = filters.status === '全部狀態' || item.status === filters.status
 
     return matchesTaskNo && matchesProductName && matchesIndustryCode && matchesStatus

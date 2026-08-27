@@ -64,12 +64,12 @@ export const caseApi = {
   },
 
   async listAdminAreas() {
-    const response = await apiClient.post('/api/map/admin-area/list')
+    const response = await apiClient.post('/api/reference/admin-county/list')
     return unwrapResponse(response) || []
   },
 
   async listBusinessIndustryCodes() {
-    const response = await apiClient.post('/api/map/business-industry-code/list')
+    const response = await apiClient.post('/api/reference/business-industry-code/list')
     return unwrapResponse(response) || []
   },
 }

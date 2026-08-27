@@ -30,7 +30,7 @@ const handleOptionClick = () => {
     return
   }
 
-  emit('select', props.industry.apiIndustryCode)
+  emit('select', props.industry.industryCode)
 }
 </script>
 
@@ -52,7 +52,7 @@ const handleOptionClick = () => {
         class="industry-option tree"
         type="button"
         :class="{
-          selected: !hasChildren && industry.apiIndustryCode === modelValue,
+          selected: !hasChildren && industry.industryCode === modelValue,
           parent: hasChildren,
         }"
         @click="handleOptionClick"

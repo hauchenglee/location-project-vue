@@ -27,8 +27,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const normalizeIndustryCodeForApi = (industryCode) => String(industryCode || '').replace(/[^0-9A-Za-z]/g, '')
-
 const rootEl = ref(null)
 const searchInput = ref(null)
 const isOpen = ref(false)
@@ -42,7 +40,6 @@ const normalizeOption = (option) => {
   return {
     ...option,
     industryCode,
-    apiIndustryCode: normalizeIndustryCodeForApi(industryCode),
     name: option.name || '',
     definition: option.definition || '',
     sectionCode: option.sectionCode || '',
@@ -100,7 +97,6 @@ const sortedOptions = computed(() =>
 )
 
 const optionMap = computed(() => new Map(sortedOptions.value.map((option) => [option.industryCode, option])))
-const apiOptionMap = computed(() => new Map(sortedOptions.value.map((option) => [option.apiIndustryCode, option])))
 
 const treeOptions = computed(() => {
   const nodes = sortedOptions.value.map((option) => ({ ...option, children: [] }))
@@ -121,7 +117,7 @@ const treeOptions = computed(() => {
   return roots
 })
 
-const selectedOption = computed(() => apiOptionMap.value.get(props.modelValue) || null)
+const selectedOption = computed(() => optionMap.value.get(props.modelValue) || null)
 
 const displayValue = computed(() => {
   if (!props.modelValue) return props.emptyLabel || props.placeholder
@@ -134,7 +130,7 @@ const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
 const hasSearch = computed(() => Boolean(normalizedKeyword.value))
 
 const optionMatchesKeyword = (option, value) =>
-  [option.industryCode, option.apiIndustryCode, option.name, option.definition]
+  [option.industryCode, option.name, option.definition]
     .filter(Boolean)
     .some((text) => String(text).toLowerCase().includes(value))
 
@@ -170,7 +166,7 @@ const collectExpandableCodes = (nodes, codes = []) => {
 
 const getAncestorCodes = (industryCode) => {
   const ancestors = []
-  let current = apiOptionMap.value.get(industryCode)
+  let current = optionMap.value.get(industryCode)
 
   while (current) {
     const parentCode = findParentCode(current, optionMap.value)
@@ -244,7 +240,7 @@ onBeforeUnmount(() => {
 watch(
   () => props.options,
   () => {
-    if (!apiOptionMap.value.has(props.modelValue) && props.modelValue) {
+    if (!optionMap.value.has(props.modelValue) && props.modelValue) {
       expandedCodes.value = new Set()
     }
   },

@@ -1,9 +1,12 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import L from 'leaflet'
+import * as maplibregl from 'maplibre-gl'
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 import { formatGeometrySummary } from '@/utils/geoJson'
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl)
 
 const props = defineProps({
   analysisId: {
@@ -23,11 +26,17 @@ const selectedClusterKey = ref(null)
 const hoveredClusterKey = ref(null)
 
 let map
-let clusterLayer
-const layerByClusterKey = new Map()
 const clusterItemEls = new Map()
-const clusterBoundsPadding = [40, 40]
+let pendingFocusClusterKey = null
+let pendingFocusRetryCount = 0
 
+const MVT_SOURCE_ID = 'location-mvt'
+const TAIWAN_CENTER = [121.5654, 25.033]
+const TAIWAN_BOUNDS = [
+  [118.0, 21.5],
+  [123.5, 26.6],
+]
+const CLUSTER_SEARCH_ZOOM = 11
 const baseAnalysis = computed(() => detailAnalysis.value || {})
 
 const loadAnalysisDetail = async () => {
@@ -83,7 +92,7 @@ const selectedCluster = computed(
   () => metricClusterRows.value.find((metricCluster) => metricCluster.clusterKey === selectedClusterKey.value) || null,
 )
 
-const mapReadyCount = computed(() => metricClusterRows.value.filter((metricCluster) => metricCluster.geom).length)
+const mapReadyCount = computed(() => metricClusterRows.value.length)
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -103,40 +112,6 @@ const formatLocation = (analysis) => {
   return district || formatGeometrySummary(analysis.geom)
 }
 
-const getScoreColor = (value) => {
-  const score = Number(value)
-
-  if (!Number.isFinite(score)) return '#94a3b8'
-  if (score >= 90) return '#188a55'
-  if (score >= 80) return '#2f7df0'
-  if (score >= 70) return '#ff9f1c'
-  return '#d73b3e'
-}
-
-const getClusterStyle = (metricCluster) => {
-  const isSelected = metricCluster.clusterKey === selectedClusterKey.value
-  const isHovered = metricCluster.clusterKey === hoveredClusterKey.value
-  const color = getScoreColor(metricCluster.compositeScore)
-
-  return {
-    color: isSelected || isHovered ? '#0f172a' : color,
-    weight: isSelected ? 3 : isHovered ? 2.5 : 1.6,
-    fillColor: color,
-    fillOpacity: isSelected ? 0.36 : isHovered ? 0.28 : 0.18,
-  }
-}
-
-const restyleClusterLayers = () => {
-  layerByClusterKey.forEach((layer, clusterKey) => {
-    const metricCluster = layer.feature?.properties?.metricCluster
-    layer.setStyle(getClusterStyle(metricCluster))
-
-    if (clusterKey === selectedClusterKey.value) {
-      layer.bringToFront()
-    }
-  })
-}
-
 const setClusterItemEl = (clusterKey, element) => {
   if (element) {
     clusterItemEls.set(clusterKey, element)
@@ -151,38 +126,62 @@ const scrollToClusterItem = (clusterKey) => {
   itemEl?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
 }
 
-const getLayerBounds = (clusterKey) => {
-  const layer = layerByClusterKey.get(clusterKey)
-  const bounds = layer?.getBounds?.()
+const extendBoundsWithCoordinates = (bounds, coordinates) => {
+  if (!Array.isArray(coordinates)) return
 
-  if (bounds?.isValid?.()) return bounds
+  if (Number.isFinite(Number(coordinates[0])) && Number.isFinite(Number(coordinates[1]))) {
+    bounds.extend([Number(coordinates[0]), Number(coordinates[1])])
+    return
+  }
 
-  const latLng = layer?.getLatLng?.()
-  return latLng ? L.latLngBounds([latLng]) : null
+  coordinates.forEach((coordinate) => extendBoundsWithCoordinates(bounds, coordinate))
 }
 
-const focusClusterOnMap = (clusterKey) => {
-  if (!map) return
+const getGeometryBounds = (geometryLike) => {
+  const geometry = geometryLike?.type === 'Feature' ? geometryLike.geometry : geometryLike
+  if (!geometry) return null
 
-  const bounds = getLayerBounds(clusterKey)
-  if (!bounds) return
+  const bounds = new maplibregl.LngLatBounds()
 
-  map.flyToBounds(bounds, {
-    padding: clusterBoundsPadding,
-    maxZoom: 16,
-    animate: true,
-    duration: 0.5,
-  })
+  if (geometry.type === 'GeometryCollection') {
+    geometry.geometries?.forEach((item) => extendBoundsWithCoordinates(bounds, item?.coordinates))
+  } else {
+    extendBoundsWithCoordinates(bounds, geometry.coordinates)
+  }
+
+  return bounds.isEmpty() ? null : bounds
+}
+
+const toFiniteNumber = (value) => {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+const getClusterBoundsFromVo = (metricCluster) => {
+  const minLng = toFiniteNumber(metricCluster?.minLng)
+  const minLat = toFiniteNumber(metricCluster?.minLat)
+  const maxLng = toFiniteNumber(metricCluster?.maxLng)
+  const maxLat = toFiniteNumber(metricCluster?.maxLat)
+
+  if ([minLng, minLat, maxLng, maxLat].some((value) => value === null)) {
+    return null
+  }
+
+  const bounds = new maplibregl.LngLatBounds()
+  bounds.extend([Math.min(minLng, maxLng), Math.min(minLat, maxLat)])
+  bounds.extend([Math.max(minLng, maxLng), Math.max(minLat, maxLat)])
+
+  return bounds.isEmpty() ? null : bounds
 }
 
 const selectCluster = (metricCluster, options = {}) => {
   if (!metricCluster) return
 
   selectedClusterKey.value = metricCluster.clusterKey
-  restyleClusterLayers()
+  updateMetricCellPaint()
 
   if (options.focusMap) {
-    focusClusterOnMap(metricCluster.clusterKey)
+    scheduleClusterFocus(metricCluster)
   }
 
   if (options.scrollList) {
@@ -190,115 +189,363 @@ const selectCluster = (metricCluster, options = {}) => {
   }
 }
 
-const toFeature = (metricCluster) => {
-  if (!metricCluster?.geom) return null
-  const geometry = metricCluster.geom.type === 'Feature' ? metricCluster.geom.geometry : metricCluster.geom
-
-  if (!geometry) return null
-
-  return {
-    type: 'Feature',
-    properties: {
-      metricCluster,
-      clusterKey: metricCluster.clusterKey,
-    },
-    geometry,
-  }
-}
-
 const fitAllClusters = () => {
-  if (!map || !clusterLayer) return
+  if (!map) return
 
-  const bounds = clusterLayer.getBounds()
-  if (!bounds?.isValid?.()) return
-
-  map.fitBounds(bounds, {
-    padding: clusterBoundsPadding,
-    maxZoom: 14,
+  map.fitBounds(TAIWAN_BOUNDS, {
+    padding: 34,
     animate: false,
   })
 }
 
-const renderClusterMap = async () => {
-  await nextTick()
+const fitAnalysisAreaForClusterSearch = () => {
   if (!map) return
 
-  if (clusterLayer) {
-    clusterLayer.remove()
-    clusterLayer = null
-  }
+  const analysisBounds = getGeometryBounds(baseAnalysis.value.geom)
 
-  layerByClusterKey.clear()
-
-  const features = metricClusterRows.value.map(toFeature).filter(Boolean)
-  if (!features.length) {
-    selectedClusterKey.value = metricClusterRows.value[0]?.clusterKey ?? null
+  if (analysisBounds) {
+    map.fitBounds(analysisBounds, {
+      padding: 72,
+      maxZoom: 14,
+      duration: 360,
+    })
     return
   }
 
-  if (!metricClusterRows.value.some((metricCluster) => metricCluster.clusterKey === selectedClusterKey.value)) {
-    selectedClusterKey.value = features[0].properties.clusterKey
-  }
+  map.easeTo({
+    center: TAIWAN_CENTER,
+    zoom: CLUSTER_SEARCH_ZOOM,
+    duration: 360,
+  })
+}
 
-  clusterLayer = L.geoJSON(
-    {
-      type: 'FeatureCollection',
-      features,
+const getApiUrl = (path) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+  return `${baseUrl}${path}`
+}
+
+const getTileUrl = () => {
+  const params = new URLSearchParams()
+  if (props.analysisId) params.set('analysisId', props.analysisId)
+  const query = params.toString()
+  return getApiUrl(`/api/map/tiles/{z}/{x}/{y}.mvt${query ? `?${query}` : ''}`)
+}
+
+const createMapStyle = () => ({
+  version: 8,
+  sources: {
+    [MVT_SOURCE_ID]: {
+      type: 'vector',
+      tiles: [getTileUrl()],
+      minzoom: 0,
+      maxzoom: 22,
     },
+  },
+  layers: [
     {
-      style: (feature) => getClusterStyle(feature.properties.metricCluster),
-      onEachFeature: (feature, layer) => {
-        const metricCluster = feature.properties.metricCluster
-        const clusterKey = feature.properties.clusterKey
-        layerByClusterKey.set(clusterKey, layer)
-        layer.on({
-          click: () => selectCluster(metricCluster, { scrollList: true }),
-          mouseover: () => {
-            hoveredClusterKey.value = clusterKey
-            restyleClusterLayers()
-          },
-          mouseout: () => {
-            hoveredClusterKey.value = null
-            restyleClusterLayers()
-          },
-        })
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#eef3f8',
       },
     },
-  ).addTo(map)
+    {
+      id: 'admin-county-fill',
+      type: 'fill',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'admin_county',
+      minzoom: 0,
+      maxzoom: 12,
+      paint: {
+        'fill-color': '#e8edf3',
+        'fill-opacity': 0.72,
+      },
+    },
+    {
+      id: 'admin-county-outline',
+      type: 'line',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'admin_county',
+      minzoom: 0,
+      maxzoom: 13,
+      paint: {
+        'line-color': '#9aa8b8',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.6, 11, 1.2],
+      },
+    },
+    {
+      id: 'admin-town-outline',
+      type: 'line',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'admin_town',
+      minzoom: 8,
+      maxzoom: 15,
+      paint: {
+        'line-color': '#c0cad6',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.3, 13, 0.9],
+      },
+    },
+    {
+      id: 'metric-cell-fill',
+      type: 'fill',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'metric_cell',
+      minzoom: 8,
+      maxzoom: 23,
+      paint: metricCellFillPaint(),
+    },
+    {
+      id: 'metric-cell-outline',
+      type: 'line',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'metric_cell',
+      minzoom: 8,
+      maxzoom: 23,
+      paint: metricCellOutlinePaint(),
+    },
+    {
+      id: 'metro-station-circle',
+      type: 'circle',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'metro_station',
+      minzoom: 10,
+      maxzoom: 23,
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 16, 5],
+        'circle-color': '#2662d9',
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1,
+        'circle-opacity': 0.9,
+      },
+    },
+    {
+      id: 'business-entity-circle',
+      type: 'circle',
+      source: MVT_SOURCE_ID,
+      'source-layer': 'business_entity',
+      minzoom: 12,
+      maxzoom: 23,
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 1.5, 17, 4],
+        'circle-color': '#14825d',
+        'circle-opacity': 0.52,
+      },
+    },
+  ],
+})
 
-  fitAllClusters()
-  restyleClusterLayers()
-  window.setTimeout(() => map?.invalidateSize(), 80)
+function clusterMatchExpression(clusterKey) {
+  return ['==', ['to-string', ['get', 'metric_cluster_id']], clusterKey || '']
+}
+
+function metricCellBaseColorExpression() {
+  return [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'composite_rank'], 0],
+    0,
+    '#94a3b8',
+    25,
+    '#d73b3e',
+    50,
+    '#ff9f1c',
+    75,
+    '#2f7df0',
+    100,
+    '#188a55',
+  ]
+}
+
+function metricCellFillPaint() {
+  const selected = clusterMatchExpression(selectedClusterKey.value)
+  const hovered = clusterMatchExpression(hoveredClusterKey.value)
+
+  return {
+    'fill-color': ['case', selected, '#0f172a', hovered, '#1f2937', metricCellBaseColorExpression()],
+    'fill-opacity': ['case', selected, 0.58, hovered, 0.42, 0.28],
+  }
+}
+
+function metricCellOutlinePaint() {
+  const selected = clusterMatchExpression(selectedClusterKey.value)
+  const hovered = clusterMatchExpression(hoveredClusterKey.value)
+
+  return {
+    'line-color': ['case', selected, '#020617', hovered, '#111827', '#ffffff'],
+    'line-width': ['case', selected, 2.2, hovered, 1.5, 0.7],
+    'line-opacity': ['case', selected, 0.95, hovered, 0.85, 0.55],
+  }
+}
+
+const updateMetricCellPaint = () => {
+  if (!map?.isStyleLoaded?.()) return
+  if (!map.getLayer('metric-cell-fill') || !map.getLayer('metric-cell-outline')) return
+
+  map.setPaintProperty('metric-cell-fill', 'fill-color', metricCellFillPaint()['fill-color'])
+  map.setPaintProperty('metric-cell-fill', 'fill-opacity', metricCellFillPaint()['fill-opacity'])
+  map.setPaintProperty('metric-cell-outline', 'line-color', metricCellOutlinePaint()['line-color'])
+  map.setPaintProperty('metric-cell-outline', 'line-width', metricCellOutlinePaint()['line-width'])
+  map.setPaintProperty('metric-cell-outline', 'line-opacity', metricCellOutlinePaint()['line-opacity'])
+}
+
+const isClusterFeature = (feature, clusterKey) => String(feature?.properties?.metric_cluster_id ?? '') === clusterKey
+
+const getClusterBoundsFromLoadedTiles = (clusterKey) => {
+  if (!map?.isStyleLoaded?.()) return null
+
+  const bounds = new maplibregl.LngLatBounds()
+  const features = map.querySourceFeatures(MVT_SOURCE_ID, { sourceLayer: 'metric_cell' })
+
+  features
+    .filter((feature) => isClusterFeature(feature, clusterKey))
+    .forEach((feature) => extendBoundsWithCoordinates(bounds, feature.geometry?.coordinates))
+
+  return bounds.isEmpty() ? null : bounds
+}
+
+const focusClusterOnLoadedTiles = (clusterKey) => {
+  const bounds = getClusterBoundsFromLoadedTiles(clusterKey)
+
+  if (!bounds) return false
+
+  map.fitBounds(bounds, {
+    padding: 54,
+    maxZoom: 15,
+    duration: 520,
+  })
+
+  return true
+}
+
+const focusClusterBounds = (bounds) => {
+  if (!map || !bounds) return false
+
+  map.fitBounds(bounds, {
+    padding: 54,
+    maxZoom: 15,
+    duration: 520,
+  })
+
+  return true
+}
+
+const scheduleClusterFocus = (metricClusterOrKey) => {
+  if (!map || !metricClusterOrKey) return
+
+  const metricCluster = typeof metricClusterOrKey === 'object'
+    ? metricClusterOrKey
+    : metricClusterRows.value.find((row) => row.clusterKey === String(metricClusterOrKey))
+  const clusterKey = metricCluster?.clusterKey || String(metricClusterOrKey)
+
+  pendingFocusClusterKey = clusterKey
+  pendingFocusRetryCount = 0
+
+  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster)) || focusClusterOnLoadedTiles(clusterKey)) {
+    pendingFocusClusterKey = null
+    return
+  }
+
+  fitAnalysisAreaForClusterSearch()
+}
+
+const retryPendingClusterFocus = () => {
+  if (!pendingFocusClusterKey) return
+
+  const metricCluster = metricClusterRows.value.find((row) => row.clusterKey === pendingFocusClusterKey)
+
+  if (focusClusterBounds(getClusterBoundsFromVo(metricCluster)) || focusClusterOnLoadedTiles(pendingFocusClusterKey)) {
+    pendingFocusClusterKey = null
+    return
+  }
+
+  pendingFocusRetryCount += 1
+  if (pendingFocusRetryCount > 8) {
+    pendingFocusClusterKey = null
+  }
+}
+
+const findMetricClusterByFeature = (feature) => {
+  const clusterKey = String(feature?.properties?.metric_cluster_id ?? '')
+  return metricClusterRows.value.find((metricCluster) => metricCluster.clusterKey === clusterKey)
+}
+
+const refreshMapTiles = () => {
+  if (!map) return
+
+  map.setStyle(createMapStyle())
+  map.once('idle', () => {
+    updateMetricCellPaint()
+    if (selectedClusterKey.value) {
+      scheduleClusterFocus(selectedClusterKey.value)
+    }
+  })
 }
 
 const initializeMap = async () => {
   await nextTick()
   if (map || !mapEl.value) return
 
-  map = L.map(mapEl.value, {
-    zoomControl: true,
-    attributionControl: true,
-    scrollWheelZoom: true,
-    doubleClickZoom: true,
-    boxZoom: true,
-    keyboard: true,
-  }).setView([25.033, 121.5654], 12)
+  map = new maplibregl.Map({
+    container: mapEl.value,
+    style: createMapStyle(),
+    center: TAIWAN_CENTER,
+    zoom: 8,
+    minZoom: 6,
+    maxZoom: 22,
+    attributionControl: false,
+  })
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
 
-  renderClusterMap()
+  map.on('load', () => {
+    fitAllClusters()
+    updateMetricCellPaint()
+    if (selectedClusterKey.value) scheduleClusterFocus(selectedClusterKey.value)
+  })
+
+  map.on('idle', retryPendingClusterFocus)
+
+  map.on('click', 'metric-cell-fill', (event) => {
+    const metricCluster = findMetricClusterByFeature(event.features?.[0])
+    if (metricCluster) selectCluster(metricCluster, { scrollList: true, focusMap: true })
+  })
+
+  map.on('mousemove', 'metric-cell-fill', (event) => {
+    map.getCanvas().style.cursor = 'pointer'
+    hoveredClusterKey.value = String(event.features?.[0]?.properties?.metric_cluster_id ?? '')
+    updateMetricCellPaint()
+  })
+
+  map.on('mouseleave', 'metric-cell-fill', () => {
+    map.getCanvas().style.cursor = ''
+    hoveredClusterKey.value = null
+    updateMetricCellPaint()
+  })
 }
 
 watch(() => props.analysisId, () => {
   selectedClusterKey.value = null
   loadAnalysisDetail()
+  refreshMapTiles()
 })
 
-watch(metricClusterRows, renderClusterMap, { deep: true })
-watch(selectedClusterKey, restyleClusterLayers)
+watch(metricClusterRows, async (rows) => {
+  if (!rows.length) {
+    selectedClusterKey.value = null
+    return
+  }
+
+  if (!rows.some((metricCluster) => metricCluster.clusterKey === selectedClusterKey.value)) {
+    selectedClusterKey.value = rows[0].clusterKey
+  }
+
+  await nextTick()
+  updateMetricCellPaint()
+  scheduleClusterFocus(selectedClusterKey.value)
+}, { deep: true })
+
+watch(selectedClusterKey, updateMetricCellPaint)
 
 onMounted(async () => {
   await loadAnalysisDetail()
@@ -308,7 +555,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   map?.remove()
   map = null
-  layerByClusterKey.clear()
+  pendingFocusClusterKey = null
   clusterItemEls.clear()
 })
 </script>
@@ -382,7 +629,7 @@ onBeforeUnmount(() => {
       <section class="analysis-map-pane">
         <div class="analysis-map-top">
           <div>
-            <h3>OpenStreetMap</h3>
+            <h3>Vector Tile / MVT</h3>
             <p>
               <template v-if="selectedCluster">
                 已選取 {{ selectedCluster.displayName }} / Cluster #{{ selectedCluster.id || '-' }}
@@ -396,14 +643,14 @@ onBeforeUnmount(() => {
             <button class="btn-sm" type="button" :disabled="!mapReadyCount" @click="fitAllClusters">
               全部範圍
             </button>
-            <strong>{{ mapReadyCount }} layers</strong>
+            <strong>{{ mapReadyCount }} clusters</strong>
           </div>
         </div>
 
         <div class="analysis-map-stage">
-          <div ref="mapEl" class="analysis-cluster-map leaflet-stage" aria-label="生活圈 OpenStreetMap"></div>
-          <div v-if="metricClusterRows.length && !mapReadyCount" class="analysis-map-empty">
-            目前生活圈缺少可繪製的 geom。
+          <div ref="mapEl" class="analysis-cluster-map maplibre-stage" aria-label="生活圈 Vector Tile 地圖"></div>
+          <div v-if="!metricClusterRows.length && !isLoading" class="analysis-map-empty">
+            目前沒有可顯示的生活圈 MVT 資料。
           </div>
         </div>
       </section>

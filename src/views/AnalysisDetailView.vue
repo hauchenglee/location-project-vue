@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClusterLocatorMap from '@/components/maps/ClusterLocatorMap.vue'
+import { sameClusterId } from '@/maps/models/metricCluster'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
 import { formatGeometrySummary } from '@/utils/geoJson'
@@ -72,7 +73,7 @@ const metricClusterRows = computed(() => {
 })
 
 const selectedCluster = computed(
-  () => metricClusterRows.value.find((metricCluster) => String(metricCluster.id) === String(selectedMetricClusterId.value)) || null,
+  () => metricClusterRows.value.find((metricCluster) => sameClusterId(metricCluster.id, selectedMetricClusterId.value)) || null,
 )
 
 const mapReadyCount = computed(() => metricClusterRows.value.length)
@@ -138,7 +139,7 @@ watch(metricClusterRows, async (rows) => {
     return
   }
 
-  if (selectedMetricClusterId.value && !rows.some((metricCluster) => String(metricCluster.id) === String(selectedMetricClusterId.value))) {
+  if (selectedMetricClusterId.value && !rows.some((metricCluster) => sameClusterId(metricCluster.id, selectedMetricClusterId.value))) {
     selectedMetricClusterId.value = null
   }
 }, { deep: true })
@@ -186,7 +187,7 @@ onBeforeUnmount(() => {
             :key="metricCluster.rowKey"
             :ref="(element) => setClusterItemEl(metricCluster.id, element)"
             class="analysis-cluster-item"
-            :class="{ active: String(metricCluster.id) === String(selectedMetricClusterId) }"
+            :class="{ active: sameClusterId(metricCluster.id, selectedMetricClusterId) }"
             tabindex="0"
             @click="selectCluster(metricCluster, { focusMap: true })"
             @keydown.enter="selectCluster(metricCluster, { focusMap: true })"
@@ -245,7 +246,6 @@ onBeforeUnmount(() => {
             :analysis-id="analysisId"
             :metric-clusters="metricClusterRows"
             :selected-metric-cluster-id="selectedMetricClusterId"
-            :analysis-geometry="baseAnalysis.geom"
             @select-cluster="selectCluster($event, { scrollList: true })"
           />
           <div v-if="!metricClusterRows.length && !isLoading" class="analysis-map-empty">

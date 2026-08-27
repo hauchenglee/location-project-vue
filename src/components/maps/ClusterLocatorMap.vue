@@ -4,8 +4,9 @@ import { TAIWAN_BOUNDS, TAIWAN_CENTER } from '@/maps/constants'
 import { useClusterMarkers } from '@/maps/composables/useClusterMarkers'
 import { useMapLibreMap } from '@/maps/composables/useMapLibreMap'
 import { clusterFootprintLayers } from '@/maps/layers/clusterFootprintLayers'
+import { sameClusterId } from '@/maps/models/metricCluster'
 import { createClusterLocatorStyle } from '@/maps/styles'
-import { getClusterBounds, getClustersBounds, getGeometryBounds } from '@/maps/utils/bounds'
+import { getClusterBounds, getClusterCenter, getClustersBounds } from '@/maps/utils/bounds'
 
 const props = defineProps({
   analysisId: {
@@ -18,10 +19,6 @@ const props = defineProps({
   },
   selectedMetricClusterId: {
     type: [Number, String],
-    default: null,
-  },
-  analysisGeometry: {
-    type: [Object, String],
     default: null,
   },
 })
@@ -91,20 +88,10 @@ const fitAllClusters = () => {
   })
 }
 
-const fitAnalysisArea = (options = {}) => {
+const fitDefaultArea = (options = {}) => {
   if (!map.value) return
 
-  const analysisBounds = getGeometryBounds(props.analysisGeometry)
   const duration = options.animate === false ? 0 : 360
-
-  if (analysisBounds) {
-    map.value.fitBounds(analysisBounds, {
-      padding: 72,
-      maxZoom: 14,
-      duration,
-    })
-    return
-  }
 
   map.value.easeTo({
     center: TAIWAN_CENTER,
@@ -118,7 +105,7 @@ const focusCluster = (metricClusterOrKey, options = {}) => {
 
   const metricCluster = typeof metricClusterOrKey === 'object'
     ? metricClusterOrKey
-    : props.metricClusters.find((cluster) => Number(cluster.id) === Number(metricClusterOrKey))
+    : props.metricClusters.find((cluster) => sameClusterId(cluster.id, metricClusterOrKey))
   const bounds = getClusterBounds(metricCluster)
   const duration = options.animate === false ? 0 : 520
 
@@ -131,12 +118,22 @@ const focusCluster = (metricClusterOrKey, options = {}) => {
     return
   }
 
-  fitAnalysisArea(options)
+  const center = getClusterCenter(metricCluster)
+  if (center) {
+    map.value.easeTo({
+      center,
+      zoom: 15,
+      duration,
+    })
+    return
+  }
+
+  fitDefaultArea(options)
 }
 
 const findClusterByFeature = (feature) => {
   const metricClusterId = Number(feature?.properties?.id)
-  return props.metricClusters.find((cluster) => Number(cluster.id) === metricClusterId)
+  return props.metricClusters.find((cluster) => sameClusterId(cluster.id, metricClusterId))
 }
 
 const refreshMap = (options = {}) => {

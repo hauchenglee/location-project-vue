@@ -1,4 +1,5 @@
 import * as maplibregl from 'maplibre-gl'
+import { sameClusterId } from '@/maps/models/metricCluster'
 import { getClusterCenter } from '@/maps/utils/bounds'
 
 export const useClusterMarkers = ({ map, onSelect }) => {
@@ -20,7 +21,7 @@ export const useClusterMarkers = ({ map, onSelect }) => {
 
         const element = document.createElement('button')
         element.type = 'button'
-        element.className = `cluster-locator-marker${Number(metricCluster.id) === Number(selectedMetricClusterId) ? ' active' : ''}`
+        element.className = `cluster-locator-marker${sameClusterId(metricCluster.id, selectedMetricClusterId) ? ' active' : ''}`
         element.textContent = metricCluster.sequence
         element.setAttribute('aria-label', `選取${metricCluster.displayName}`)
         element.addEventListener('click', (event) => {

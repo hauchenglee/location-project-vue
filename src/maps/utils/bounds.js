@@ -1,64 +1,30 @@
 import * as maplibregl from 'maplibre-gl'
+import { getClusterCoordinateSet } from '@/maps/models/metricCluster'
 
-export const toFiniteNumber = (value) => {
-  const number = Number(value)
-  return Number.isFinite(number) ? number : null
-}
-
-export const extendBoundsWithCoordinates = (bounds, coordinates) => {
-  if (!Array.isArray(coordinates)) return
-
-  if (Number.isFinite(Number(coordinates[0])) && Number.isFinite(Number(coordinates[1]))) {
-    bounds.extend([Number(coordinates[0]), Number(coordinates[1])])
-    return
-  }
-
-  coordinates.forEach((coordinate) => extendBoundsWithCoordinates(bounds, coordinate))
-}
-
-export const getGeometryBounds = (geometryLike) => {
-  const geometry = geometryLike?.type === 'Feature' ? geometryLike.geometry : geometryLike
-  if (!geometry) return null
-
-  const bounds = new maplibregl.LngLatBounds()
-
-  if (geometry.type === 'GeometryCollection') {
-    geometry.geometries?.forEach((item) => extendBoundsWithCoordinates(bounds, item?.coordinates))
-  } else {
-    extendBoundsWithCoordinates(bounds, geometry.coordinates)
-  }
-
-  return bounds.isEmpty() ? null : bounds
-}
+const MIN_CLUSTER_BOUNDS_SPAN = 0.002
 
 export const getClusterBounds = (metricCluster) => {
-  const minLng = toFiniteNumber(metricCluster?.minLng)
-  const minLat = toFiniteNumber(metricCluster?.minLat)
-  const maxLng = toFiniteNumber(metricCluster?.maxLng)
-  const maxLat = toFiniteNumber(metricCluster?.maxLat)
+  const coordinateSet = getClusterCoordinateSet(metricCluster)
+  if (!coordinateSet?.bbox) return null
 
-  if ([minLng, minLat, maxLng, maxLat].some((value) => value === null)) {
-    return null
-  }
-
-  const west = Math.min(minLng, maxLng)
-  const south = Math.min(minLat, maxLat)
-  const east = Math.max(minLng, maxLng)
-  const north = Math.max(minLat, maxLat)
+  const { west, south, east, north } = coordinateSet.bbox
   const bounds = new maplibregl.LngLatBounds()
+  const lngSpan = Math.max(east - west, MIN_CLUSTER_BOUNDS_SPAN)
+  const latSpan = Math.max(north - south, MIN_CLUSTER_BOUNDS_SPAN)
+  const centerLng = (west + east) / 2
+  const centerLat = (south + north) / 2
 
-  bounds.extend([west, south])
-  bounds.extend([east, north])
+  bounds.extend([centerLng - lngSpan / 2, centerLat - latSpan / 2])
+  bounds.extend([centerLng + lngSpan / 2, centerLat + latSpan / 2])
 
   return bounds.isEmpty() ? null : bounds
 }
 
 export const getClusterCenter = (metricCluster) => {
-  const centerLng = toFiniteNumber(metricCluster?.centerLng)
-  const centerLat = toFiniteNumber(metricCluster?.centerLat)
+  const coordinateSet = getClusterCoordinateSet(metricCluster)
 
-  if (centerLng !== null && centerLat !== null) {
-    return [centerLng, centerLat]
+  if (coordinateSet?.center) {
+    return coordinateSet.center
   }
 
   const bounds = getClusterBounds(metricCluster)
@@ -73,10 +39,16 @@ export const getClustersBounds = (metricClusters) => {
 
   metricClusters.forEach((metricCluster) => {
     const clusterBounds = getClusterBounds(metricCluster)
-    if (!clusterBounds) return
+    if (clusterBounds) {
+      bounds.extend(clusterBounds.getSouthWest())
+      bounds.extend(clusterBounds.getNorthEast())
+      return
+    }
 
-    bounds.extend(clusterBounds.getSouthWest())
-    bounds.extend(clusterBounds.getNorthEast())
+    const center = getClusterCenter(metricCluster)
+    if (!center) return
+
+    bounds.extend(center)
   })
 
   return bounds.isEmpty() ? null : bounds

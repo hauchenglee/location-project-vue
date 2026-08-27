@@ -1,16 +1,10 @@
 import { CLUSTER_LOCATOR_COLORS, MVT_LAYERS, MVT_SOURCE_ID, styleLayerZoom } from '@/maps/constants'
-
-const toMvtInt = (value) => {
-  if (value === null || value === undefined || value === '') return null
-
-  const number = Number(value)
-  return Number.isInteger(number) ? number : null
-}
+import { toClusterId } from '@/maps/models/metricCluster'
 
 const clusterIdProperty = MVT_LAYERS.metricCluster.properties.id
 
 const clusterIdEqualsExpression = (metricClusterId) => {
-  const mvtClusterId = toMvtInt(metricClusterId)
+  const mvtClusterId = toClusterId(metricClusterId)
   return mvtClusterId === null ? false : ['==', ['get', clusterIdProperty], mvtClusterId]
 }
 
@@ -21,7 +15,7 @@ export const clusterFootprintColorExpression = (metricClusters) => {
   const usedClusterIds = new Set()
 
   metricClusters.forEach((metricCluster, index) => {
-    const mvtClusterId = toMvtInt(metricCluster.id)
+    const mvtClusterId = toClusterId(metricCluster.id)
     if (mvtClusterId === null || usedClusterIds.has(mvtClusterId)) return
 
     usedClusterIds.add(mvtClusterId)

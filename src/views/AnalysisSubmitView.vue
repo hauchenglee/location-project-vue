@@ -15,12 +15,27 @@ const businessIndustryCodes = ref([])
 const isLoadingBusinessIndustryCodes = ref(false)
 const businessIndustryCodeError = ref('')
 
+const analysisScopeOptions = [
+  { value: 'ADMIN', label: '行政區域' },
+  { value: 'POINT', label: '指定地點' },
+]
+
+const rangeSizeOptions = [
+  { value: 250, label: '街道級', detail: '250m' },
+  { value: 500, label: '步行級', detail: '500m' },
+  { value: 1000, label: '生活圈', detail: '1000m' },
+]
+
 const initialForm = {
+  analysisScope: 'ADMIN',
   taskNo: '',
   productName: '',
   industryCode: '',
   countyName: '',
   townName: '',
+  longitude: '',
+  latitude: '',
+  radius: 500,
   rangeSize: 500,
   preference: '0.5',
   selectedDayType: 'ALL',
@@ -31,8 +46,17 @@ const initialForm = {
 const form = reactive({ ...initialForm })
 
 const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 100))
+const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 100))
+const isAdminScope = computed(() => form.analysisScope === 'ADMIN')
+const isPointScope = computed(() => form.analysisScope === 'POINT')
 const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
 const townOptions = computed(() => selectedAdminArea.value?.towns || [])
+const canSubmit = computed(() => {
+  if (!form.productName || !form.industryCode) return false
+  if (isAdminScope.value) return Boolean(form.countyName && form.townName)
+
+  return false
+})
 
 const statusLabelMap = {
   COMPLETED: '完成',
@@ -85,6 +109,17 @@ watch(
   },
 )
 
+watch(
+  () => form.analysisScope,
+  (analysisScope) => {
+    if (analysisScope === 'ADMIN') {
+      form.longitude = ''
+      form.latitude = ''
+      form.radius = 500
+    }
+  },
+)
+
 onMounted(() => {
   loadAdminAreas()
   loadBusinessIndustryCodes()
@@ -95,8 +130,11 @@ const createPayload = () => {
     taskNo: form.taskNo || null,
     productName: form.productName,
     industryCode: form.industryCode,
-    countyName: form.countyName || null,
-    townName: form.townName || null,
+    countyName: isAdminScope.value ? form.countyName || null : null,
+    townName: isAdminScope.value ? form.townName || null : null,
+    longitude: isPointScope.value && form.longitude !== '' ? Number(form.longitude) : null,
+    latitude: isPointScope.value && form.latitude !== '' ? Number(form.latitude) : null,
+    radius: isPointScope.value ? radius.value : null,
     rangeSize: rangeSize.value,
     preference: form.preference,
     selectedDayType: form.selectedDayType,
@@ -106,6 +144,13 @@ const createPayload = () => {
 }
 
 const submitAnalysis = async () => {
+  if (!canSubmit.value) {
+    submitError.value = isPointScope.value
+      ? '指定地點分析尚未啟用，請先使用行政區域建立案件。'
+      : '請完成商品名稱、產業類別與行政區域設定。'
+    return
+  }
+
   isSubmitting.value = true
   submitError.value = ''
   submitResult.value = null
@@ -132,7 +177,7 @@ const submitAnalysis = async () => {
 
           <div class="section">
             <div class="section-header">
-              <h3>分析基本資料</h3>
+              <h3>分析目標</h3>
             </div>
 
             <div class="grid-2">
@@ -160,10 +205,23 @@ const submitAnalysis = async () => {
             </div>
 
             <div class="section-header">
-              <h3>區域設定</h3>
+              <h3>分析範圍</h3>
             </div>
 
-            <div class="grid-2">
+            <div class="segmented-control" aria-label="分析範圍類型">
+              <button
+                v-for="option in analysisScopeOptions"
+                :key="option.value"
+                class="segmented-option"
+                :class="{ active: form.analysisScope === option.value }"
+                type="button"
+                @click="form.analysisScope = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+
+            <div v-if="isAdminScope" class="grid-2">
               <div class="field">
                 <label for="countyName">縣市</label>
                 <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
@@ -193,9 +251,41 @@ const submitAnalysis = async () => {
               </div>
             </div>
 
+            <div v-else class="grid-2">
+              <div class="field">
+                <label for="longitude">經度</label>
+                <input id="longitude" v-model="form.longitude" type="number" step="0.000001" placeholder="121.5654" />
+              </div>
+              <div class="field">
+                <label for="latitude">緯度</label>
+                <input id="latitude" v-model="form.latitude" type="number" step="0.000001" placeholder="25.0330" />
+              </div>
+              <div class="field">
+                <label for="radius">分析半徑</label>
+                <select id="radius" v-model="form.radius">
+                  <option :value="250">250m</option>
+                  <option :value="500">500m</option>
+                  <option :value="1000">1000m</option>
+                </select>
+                <div class="field-note">指定地點分析需後端 point scope 啟用後才能提交。</div>
+              </div>
+            </div>
+
             <div class="field">
-              <label for="rangeSize">格網範圍大小（公尺）</label>
-              <input id="rangeSize" v-model="form.rangeSize" type="number" min="100" step="100" />
+              <label>商圈尺度</label>
+              <div class="range-choice-grid">
+                <button
+                  v-for="option in rangeSizeOptions"
+                  :key="option.value"
+                  class="range-choice"
+                  :class="{ active: Number(form.rangeSize) === option.value }"
+                  type="button"
+                  @click="form.rangeSize = option.value"
+                >
+                  <strong>{{ option.label }}</strong>
+                  <span>{{ option.detail }}</span>
+                </button>
+              </div>
             </div>
 
             <div class="section-header">
@@ -256,7 +346,7 @@ const submitAnalysis = async () => {
 
           <div class="footer-actions">
             <button class="btn" type="button" @click="resetForm">清除</button>
-            <button class="btn primary" type="button" :disabled="isSubmitting" @click="submitAnalysis">
+            <button class="btn primary" type="button" :disabled="isSubmitting || !canSubmit" @click="submitAnalysis">
               {{ isSubmitting ? '提交中' : '提交分析' }}
             </button>
           </div>
@@ -266,7 +356,15 @@ const submitAnalysis = async () => {
 
     <aside class="right">
       <div class="map-wrap">
-        <LocationMap />
+        <LocationMap
+          :analysis-scope="form.analysisScope"
+          :county-name="form.countyName"
+          :town-name="form.townName"
+          :longitude="form.longitude"
+          :latitude="form.latitude"
+          :radius="radius"
+          :range-size="rangeSize"
+        />
       </div>
     </aside>
 

@@ -364,6 +364,11 @@ button:disabled {
   padding: var(--page-gutter);
 }
 
+.create-layout .map-wrap {
+  overflow: hidden;
+  padding: 0;
+}
+
 .form-shell {
   max-width: var(--form-shell);
   margin: 0 auto;
@@ -1613,6 +1618,50 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.45;
+}
+
+.submit-map-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #eef3f8;
+}
+
+.submit-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.submit-map-summary {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  left: 18px;
+  max-width: min(420px, calc(100% - 36px));
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.submit-map-summary h3 {
+  margin: 0;
+  color: #111318;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.submit-map-summary p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
   line-height: 1.45;
 }
 

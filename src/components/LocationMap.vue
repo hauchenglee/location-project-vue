@@ -182,14 +182,13 @@ onBeforeUnmount(clearPointPreview)
 </script>
 
 <template>
-  <div class="map-card">
-    <div class="map-top">
-      <div class="map-top-left">
+  <div class="submit-map-panel">
+    <div ref="mapEl" class="submit-map-canvas maplibre-stage" aria-label="分析範圍預覽地圖"></div>
+    <div class="submit-map-summary">
+      <div>
         <h3>分析範圍預覽</h3>
         <p>{{ scopeTitle }} · {{ scopeSubtitle }}</p>
       </div>
     </div>
-
-    <div ref="mapEl" class="map-stage maplibre-stage" aria-label="分析範圍預覽地圖"></div>
   </div>
 </template>

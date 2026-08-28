@@ -1256,6 +1256,24 @@ button:disabled {
   cursor: pointer;
 }
 
+.industry-select-value {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.industry-select-value span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.industry-select-value small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .industry-select-trigger:disabled {
   cursor: not-allowed;
 }
@@ -1277,7 +1295,7 @@ button:disabled {
   top: calc(100% + 8px);
   left: 0;
   z-index: 120;
-  width: min(560px, 100vw - 48px);
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   border: 1px solid var(--line-strong);
@@ -1310,22 +1328,23 @@ button:disabled {
 
 .industry-select-list {
   min-height: 220px;
-  max-height: 340px;
+  max-height: min(460px, 58vh);
   overflow: auto;
-  padding: 6px;
+  padding: 8px;
 }
 
 .industry-tree-row {
   display: flex;
   align-items: stretch;
   gap: 4px;
+  padding-left: calc(var(--industry-depth, 0) * 14px);
 }
 
 .industry-toggle,
 .industry-toggle-spacer {
-  flex: 0 0 26px;
-  width: 26px;
-  height: 34px;
+  flex: 0 0 24px;
+  width: 24px;
+  min-height: 42px;
 }
 
 .industry-toggle {
@@ -1354,13 +1373,13 @@ button:disabled {
 }
 
 .industry-option.tree {
-  min-height: 34px;
-  padding: 7px 8px;
+  min-height: 42px;
+  padding: 8px 10px;
 }
 
 .industry-option.search-result,
 .industry-option.empty {
-  padding: 9px 10px;
+  padding: 10px 12px;
 }
 
 .industry-option:hover,
@@ -1369,7 +1388,11 @@ button:disabled {
 }
 
 .industry-option.parent {
-  cursor: pointer;
+  cursor: default;
+}
+
+.industry-option.search-result.parent {
+  opacity: 1;
 }
 
 .industry-option.selected {
@@ -1392,6 +1415,7 @@ button:disabled {
 }
 
 .industry-name {
+  min-width: 0;
   overflow: hidden;
   color: inherit;
   font-size: 13px;
@@ -1400,15 +1424,11 @@ button:disabled {
   white-space: nowrap;
 }
 
-.industry-definition {
-  display: -webkit-box;
-  margin-top: 3px;
-  overflow: hidden;
+.industry-level {
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 11px;
-  line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-weight: 700;
 }
 
 .industry-empty {
@@ -1753,6 +1773,10 @@ table {
   width: 100%;
   min-width: 1060px;
   border-collapse: collapse;
+}
+
+.records-layout table {
+  min-width: 940px;
 }
 
 thead th {

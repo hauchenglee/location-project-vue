@@ -3,7 +3,6 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
-import { formatGeometrySummary } from '@/utils/geoJson'
 
 const emit = defineEmits(['view-detail'])
 
@@ -15,7 +14,7 @@ const isLoadingBusinessIndustryCodes = ref(false)
 const businessIndustryCodeError = ref('')
 
 const filters = reactive({
-  taskNo: '',
+  analysisNo: '',
   productName: '',
   industryCode: '',
   status: '全部狀態',
@@ -39,33 +38,16 @@ const statusLabelMap = {
   INACTIVE: '無效',
 }
 
-const dayTypeLabelMap = {
-  ALL: '全部',
-  WEEKDAY: '平日',
-  WEEKEND: '假日',
-}
-
-const timeSlotLabelMap = {
-  ALL: '全部時段',
-  MORNING: '早上',
-  AFTERNOON: '下午',
-  EVENING: '晚上',
-}
-
-const ageGroupLabelMap = {
-  ALL: '全部年齡',
-}
-
 const analysisItems = computed(() => analyses.value)
 
 const filteredAnalyses = computed(() =>
   analysisItems.value.filter((item) => {
-    const matchesTaskNo = !filters.taskNo || `${item.taskNo || item.id || ''}`.includes(filters.taskNo)
+    const matchesAnalysisNo = !filters.analysisNo || `${item.analysisNo || item.id || ''}`.includes(filters.analysisNo)
     const matchesProductName = !filters.productName || `${item.productName || ''}`.includes(filters.productName)
     const matchesIndustryCode = !filters.industryCode || item.industryCode === filters.industryCode
     const matchesStatus = filters.status === '全部狀態' || item.status === filters.status
 
-    return matchesTaskNo && matchesProductName && matchesIndustryCode && matchesStatus
+    return matchesAnalysisNo && matchesProductName && matchesIndustryCode && matchesStatus
   }),
 )
 
@@ -74,17 +56,13 @@ const paginationText = computed(() => `顯示第 ${total.value ? 1 : 0} - ${tota
 
 const formatDateTime = (value) => {
   if (!value) return '-'
-  return String(value).replace('T', ' ')
+  return value
 }
 
 const formatLocation = (item) => {
   const district = [item.countyName, item.townName].filter(Boolean).join(' / ')
-  return district || formatGeometrySummary(item.geom)
+  return district || '-'
 }
-
-const formatDayType = (value) => dayTypeLabelMap[value] || value || '-'
-const formatTimeSlot = (value) => timeSlotLabelMap[value] || value || '-'
-const formatAgeGroup = (value) => ageGroupLabelMap[value] || value || '-'
 
 const formatMeter = (value) => (value !== null && value !== undefined && value !== '' ? `${value} 公尺` : '-')
 
@@ -121,7 +99,7 @@ const loadBusinessIndustryCodes = async () => {
 
 const resetFilters = () => {
   Object.assign(filters, {
-    taskNo: '',
+    analysisNo: '',
     productName: '',
     industryCode: '',
     status: '全部狀態',
@@ -149,8 +127,8 @@ onMounted(() => {
 
           <div class="grid-4">
             <div class="field">
-              <label for="taskNo">案件號碼</label>
-              <input id="taskNo" v-model="filters.taskNo" type="text" placeholder="例如：AN-20260812-001" />
+              <label for="analysisNo">分析編號</label>
+              <input id="analysisNo" v-model="filters.analysisNo" type="text" placeholder="例如：AN-20260812-0001" />
             </div>
             <div class="field">
               <label for="productNameFilter">商品名稱</label>
@@ -195,77 +173,53 @@ onMounted(() => {
 
           <div v-if="loadError" class="form-message error">{{ loadError }}</div>
 
-          <div class="toolbar">
-            <div class="toolbar-left">
-              <span class="count">共 {{ total }} 筆分析</span>
-              <span class="pill">最近建立優先</span>
-              <span class="pill">可橫向捲動查看完整欄位</span>
-            </div>
-          </div>
-
           <div class="table-wrap interactive-table">
             <table>
               <thead>
                 <tr>
                   <th>案件</th>
-                  <th>商品</th>
+                  <th>商品名稱</th>
+                  <th>產業類別</th>
                   <th>區域</th>
-                  <th>geom</th>
                   <th>範圍 / 偏好</th>
-                  <th>情境條件</th>
-                  <th>生活圈</th>
                   <th>建立時間</th>
                   <th>狀態</th>
-                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!isLoading && !filteredAnalyses.length">
-                  <td colspan="10" class="empty-cell">目前沒有符合條件的分析資料。</td>
+                  <td colspan="7" class="empty-cell">目前沒有符合條件的分析資料。</td>
                 </tr>
                 <tr
                   v-for="analysis in filteredAnalyses"
-                  :key="analysis.id || analysis.taskNo"
+                  :key="analysis.id || analysis.analysisNo"
                   tabindex="0"
                   @click="emit('view-detail', analysis)"
                   @keydown.enter="emit('view-detail', analysis)"
                 >
                   <td>
-                    <span class="case-id">{{ analysis.taskNo || '-' }}</span>
-                    <span class="sub">系統編號：{{ analysis.id || '-' }}</span>
+                    <span class="case-id">{{ analysis.analysisNo || '-' }}</span>
                   </td>
                   <td>
                     {{ analysis.productName || '-' }}
-                    <span class="sub">產業類別：{{ analysis.industryCode || '-' }}</span>
+                  </td>
+                  <td>
+                    {{ analysis.industryName || '-' }}
                   </td>
                   <td>
                     {{ formatLocation(analysis) }}
                     <span class="sub">行政區域</span>
                   </td>
-                  <td>{{ formatGeometrySummary(analysis.geom) }}</td>
                   <td>
                     {{ formatMeter(analysis.radius) }}
                     <span class="sub">格網：{{ formatMeter(analysis.rangeSize) }}</span>
                     <span class="sub">偏好：{{ analysis.preference || '-' }}</span>
-                  </td>
-                  <td>
-                    {{ formatDayType(analysis.selectedDayType) }} / {{ formatTimeSlot(analysis.selectedTimeSlot) }}
-                    <span class="sub">年齡層：{{ formatAgeGroup(analysis.selectedAgeGroup) }}</span>
-                  </td>
-                  <td>
-                    詳情頁取得
-                    <span class="sub">分數列表</span>
                   </td>
                   <td>{{ formatDateTime(analysis.createTime) }}</td>
                   <td>
                     <span class="badge" :class="statusClassMap[analysis.status] || 'draft'">
                       {{ statusLabelMap[analysis.status] || analysis.status || '-' }}
                     </span>
-                  </td>
-                  <td>
-                    <button class="btn-sm primary" type="button" @click.stop="emit('view-detail', analysis)">
-                      查看分析
-                    </button>
                   </td>
                 </tr>
               </tbody>

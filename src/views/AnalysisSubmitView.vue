@@ -28,7 +28,6 @@ const rangeSizeOptions = [
 
 const initialForm = {
   analysisScope: 'ADMIN',
-  taskNo: '',
   productName: '',
   industryCode: '',
   countyName: '',
@@ -51,6 +50,11 @@ const isAdminScope = computed(() => form.analysisScope === 'ADMIN')
 const isPointScope = computed(() => form.analysisScope === 'POINT')
 const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
 const townOptions = computed(() => selectedAdminArea.value?.towns || [])
+const flattenIndustryCodes = (industries) =>
+  industries.flatMap((industry) => [industry, ...flattenIndustryCodes(industry.children || [])])
+const selectedIndustry = computed(() =>
+  flattenIndustryCodes(businessIndustryCodes.value).find((industry) => industry.industryCode === form.industryCode),
+)
 const canSubmit = computed(() => {
   if (!form.productName || !form.industryCode) return false
   if (isAdminScope.value) return Boolean(form.countyName && form.townName)
@@ -127,9 +131,9 @@ onMounted(() => {
 
 const createPayload = () => {
   return {
-    taskNo: form.taskNo || null,
     productName: form.productName,
     industryCode: form.industryCode,
+    industryName: selectedIndustry.value?.name || null,
     countyName: isAdminScope.value ? form.countyName || null : null,
     townName: isAdminScope.value ? form.townName || null : null,
     longitude: isPointScope.value && form.longitude !== '' ? Number(form.longitude) : null,
@@ -180,15 +184,9 @@ const submitAnalysis = async () => {
               <h3>分析目標</h3>
             </div>
 
-            <div class="grid-2">
-              <div class="field">
-                <label for="taskNo">案件號碼</label>
-                <input id="taskNo" v-model="form.taskNo" type="text" placeholder="例如：AN-20260812-001" />
-              </div>
-              <div class="field">
-                <label for="productName">商品名稱</label>
-                <input id="productName" v-model="form.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
-              </div>
+            <div class="field">
+              <label for="productName">商品名稱</label>
+              <input id="productName" v-model="form.productName" type="text" placeholder="例如：手搖飲、早午餐、超商" />
             </div>
 
             <div class="field">
@@ -341,7 +339,7 @@ const submitAnalysis = async () => {
 
           <div v-if="submitError" class="form-message error">{{ submitError }}</div>
           <div v-if="submitResult" class="form-message success">
-            已提交分析：{{ submitResult.taskNo || submitResult.id }}，目前狀態 {{ statusLabelMap[submitResult.status] || '待處理' }}。
+            已提交分析：{{ submitResult.analysisNo || submitResult.id }}，目前狀態 {{ statusLabelMap[submitResult.status] || '待處理' }}。
           </div>
 
           <div class="footer-actions">

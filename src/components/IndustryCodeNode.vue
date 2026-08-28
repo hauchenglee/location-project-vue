@@ -21,7 +21,7 @@ const emit = defineEmits(['select', 'toggle'])
 const hasChildren = computed(() => Boolean(props.industry.children?.length))
 const isExpanded = computed(() => props.expandedCodes.has(props.industry.industryCode))
 const optionStyle = computed(() => ({
-  paddingLeft: `${12 + Math.max(props.industry.levelNo - 1, 0) * 18}px`,
+  '--industry-depth': Math.max(props.industry.levelNo - 1, 0),
 }))
 
 const handleOptionClick = () => {
@@ -60,6 +60,7 @@ const handleOptionClick = () => {
         <span class="industry-option-main">
           <span class="industry-code">{{ industry.industryCode }}</span>
           <span class="industry-name">{{ industry.name }}</span>
+          <span class="industry-level">第 {{ industry.levelNo || '-' }} 層</span>
         </span>
       </button>
     </div>

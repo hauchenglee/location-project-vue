@@ -44,7 +44,7 @@ const normalizeOption = (option) => {
     definition: option.definition || '',
     sectionCode: option.sectionCode || '',
     levelNo,
-    children: [],
+    children: Array.isArray(option.children) ? option.children.map(normalizeOption) : [],
   }
 }
 
@@ -53,23 +53,13 @@ const findParentCode = (industry, codeMap) => {
   if (!code || industry.levelNo <= 1) return ''
 
   if (industry.levelNo === 2) {
-    const parentCode = industry.sectionCode
+    const parentCode = String(industry.sectionCode || '').trim()
     return parentCode && codeMap.has(parentCode) ? parentCode : ''
   }
 
   if (industry.levelNo === 3) {
     const parentCode = code.slice(0, 2)
-    if (codeMap.has(parentCode)) return parentCode
-
-    const codePrefix = Number.parseInt(parentCode, 10)
-    const rangeParent = [...codeMap.values()].find((option) => {
-      if (option.levelNo !== 2 || !/^\d{2}-\d{2}$/.test(option.industryCode)) return false
-
-      const [start, end] = option.industryCode.split('-').map((value) => Number.parseInt(value, 10))
-      return codePrefix >= start && codePrefix <= end
-    })
-
-    return rangeParent?.industryCode || ''
+    return codeMap.has(parentCode) ? parentCode : ''
   }
 
   if (industry.levelNo === 4) {
@@ -77,17 +67,19 @@ const findParentCode = (industry, codeMap) => {
     return codeMap.has(parentCode) ? parentCode : ''
   }
 
-  if (industry.levelNo === 5 && code.includes('-')) {
-    const parentCode = code.split('-')[0]
+  if (industry.levelNo === 5) {
+    const parentCode = code.slice(0, 4)
     return codeMap.has(parentCode) ? parentCode : ''
   }
 
   return ''
 }
 
+const flattenOptions = (options) =>
+  options.flatMap((option) => [option, ...flattenOptions(option.children || [])])
+
 const sortedOptions = computed(() =>
-  props.options
-    .map(normalizeOption)
+  flattenOptions(props.options.map(normalizeOption))
     .filter((option) => option.industryCode)
     .sort((left, right) => {
       const sectionCompare = left.sectionCode.localeCompare(right.sectionCode)
@@ -99,6 +91,9 @@ const sortedOptions = computed(() =>
 const optionMap = computed(() => new Map(sortedOptions.value.map((option) => [option.industryCode, option])))
 
 const treeOptions = computed(() => {
+  const normalizedOptions = props.options.map(normalizeOption).filter((option) => option.industryCode)
+  if (normalizedOptions.some((option) => option.children?.length)) return normalizedOptions
+
   const nodes = sortedOptions.value.map((option) => ({ ...option, children: [] }))
   const nodeMap = new Map(nodes.map((node) => [node.industryCode, node]))
   const roots = []
@@ -118,11 +113,14 @@ const treeOptions = computed(() => {
 })
 
 const selectedOption = computed(() => optionMap.value.get(props.modelValue) || null)
+const selectedLevelLabel = computed(() =>
+  selectedOption.value?.levelNo ? `第 ${selectedOption.value.levelNo} 層` : '',
+)
 
 const displayValue = computed(() => {
   if (!props.modelValue) return props.emptyLabel || props.placeholder
   if (!selectedOption.value) return props.modelValue
-  return `${selectedOption.value.industryCode} - ${selectedOption.value.name}`
+  return `${selectedOption.value.name} (${selectedOption.value.industryCode})`
 })
 
 const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
@@ -130,7 +128,7 @@ const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
 const hasSearch = computed(() => Boolean(normalizedKeyword.value))
 
 const optionMatchesKeyword = (option, value) =>
-  [option.industryCode, option.name, option.definition]
+  [option.industryCode, option.name, option.definition, option.sectionCode]
     .filter(Boolean)
     .some((text) => String(text).toLowerCase().includes(value))
 
@@ -151,7 +149,14 @@ const displayedTreeOptions = computed(() => {
   return filterTreeByKeyword(treeOptions.value, value)
 })
 
+const searchResults = computed(() => {
+  const value = normalizedKeyword.value
+  if (!value) return []
+  return sortedOptions.value.filter((option) => optionMatchesKeyword(option, value))
+})
+
 const hasDisplayedTreeOptions = computed(() => Boolean(displayedTreeOptions.value.length))
+const canSelectIndustry = (industry) => !industry.children?.length
 
 const collectExpandableCodes = (nodes, codes = []) => {
   nodes.forEach((node) => {
@@ -258,7 +263,10 @@ watch(normalizedKeyword, (value) => {
 <template>
   <div ref="rootEl" class="industry-select" :class="{ open: isOpen, disabled }">
     <button class="industry-select-trigger" type="button" :disabled="disabled" @click="toggleDropdown">
-      <span :class="{ placeholder: !modelValue }">{{ displayValue }}</span>
+      <span class="industry-select-value" :class="{ placeholder: !modelValue }">
+        <span>{{ displayValue }}</span>
+        <small v-if="selectedLevelLabel">{{ selectedLevelLabel }}</small>
+      </span>
       <span class="industry-select-arrow">⌄</span>
     </button>
 
@@ -283,7 +291,28 @@ watch(normalizedKeyword, (value) => {
           {{ emptyLabel }}
         </button>
 
-        <template v-if="hasDisplayedTreeOptions">
+        <template v-if="hasSearch && searchResults.length">
+          <button
+            v-for="industry in searchResults"
+            :key="industry.industryCode"
+            class="industry-option search-result"
+            type="button"
+            :class="{
+              selected: industry.industryCode === modelValue,
+              parent: !canSelectIndustry(industry),
+            }"
+            :disabled="!canSelectIndustry(industry)"
+            @click="selectValue(industry.industryCode)"
+          >
+            <span class="industry-option-main">
+              <span class="industry-code">{{ industry.industryCode }}</span>
+              <span class="industry-name">{{ industry.name }}</span>
+              <span class="industry-level">第 {{ industry.levelNo || '-' }} 層</span>
+            </span>
+          </button>
+        </template>
+
+        <template v-else-if="hasDisplayedTreeOptions">
           <IndustryCodeNode
             v-for="industry in displayedTreeOptions"
             :key="industry.industryCode"

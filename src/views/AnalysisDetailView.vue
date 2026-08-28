@@ -4,7 +4,6 @@ import ClusterLocatorMap from '@/components/maps/ClusterLocatorMap.vue'
 import { sameClusterId } from '@/maps/models/metricCluster'
 import PageLoading from '@/components/PageLoading.vue'
 import { caseApi } from '@/services/caseApi'
-import { formatGeometrySummary } from '@/utils/geoJson'
 
 const props = defineProps({
   analysisId: {
@@ -87,13 +86,13 @@ const statusLabelMap = {
 
 const formatDateTime = (value) => {
   if (!value) return '-'
-  return String(value).replace('T', ' ')
+  return value
 }
 
 const formatLocation = (analysis) => {
   const district = [analysis.countyName, analysis.townName].filter(Boolean).join(' / ')
 
-  return district || formatGeometrySummary(analysis.geom)
+  return district || '-'
 }
 
 const setClusterItemEl = (metricClusterId, element) => {

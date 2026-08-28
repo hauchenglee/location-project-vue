@@ -62,9 +62,10 @@ button:disabled {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   display: grid;
-  grid-template-rows: 74px 1fr;
+  grid-template-rows: 74px minmax(0, 1fr);
   overflow: hidden;
   background: var(--page-bg);
 }
@@ -336,6 +337,11 @@ button:disabled {
   background: #ffffff;
 }
 
+.detail-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
 .left,
 .right {
   min-height: 0;
@@ -373,12 +379,14 @@ button:disabled {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(330px, 1fr) minmax(0, 2fr);
+  overflow: hidden;
   background: #ffffff;
 }
 
 .analysis-cluster-pane,
 .analysis-map-pane {
   min-height: 0;
+  overflow: hidden;
 }
 
 .analysis-cluster-pane {
@@ -582,12 +590,13 @@ button:disabled {
 .analysis-map-stage {
   position: relative;
   min-height: 0;
+  overflow: hidden;
 }
 
 .analysis-cluster-map {
   width: 100%;
   height: 100%;
-  min-height: 520px;
+  min-height: 0;
 }
 
 .cluster-locator-marker {
@@ -1759,7 +1768,7 @@ tbody tr:hover {
 
   .analysis-detail-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(360px, 0.92fr) minmax(520px, 1.08fr);
+    grid-template-rows: minmax(0, 0.92fr) minmax(0, 1.08fr);
   }
 
   .analysis-cluster-pane {
@@ -1809,8 +1818,9 @@ tbody tr:hover {
   }
 
   .app {
-    min-height: 100vh;
-    grid-template-rows: auto 1fr;
+    height: 100vh;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .header {

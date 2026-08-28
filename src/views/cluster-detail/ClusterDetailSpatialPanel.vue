@@ -51,16 +51,16 @@ const focusCluster = (options = {}) => {
   })
 }
 
-const refreshMap = () => {
+const refreshMap = async () => {
   if (!map.value) return
 
-  setStyle(createMapStyle(), () => focusCluster())
+  setStyle(await createMapStyle(), () => focusCluster())
 }
 
 const initializeMap = async () => {
   const mapInstance = await initializeMapLibre({
     container: mapEl,
-    style: createMapStyle(),
+    style: await createMapStyle(),
   })
   if (!mapInstance) return
 

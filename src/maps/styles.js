@@ -1,5 +1,6 @@
 import { MVT_LAYERS, MVT_SOURCE_ID } from '@/maps/constants'
-import { backgroundLayer, adminBoundaryLayers } from '@/maps/layers/baseMapLayers'
+import { loadBasemapStyle } from '@/maps/basemaps/basemapStyleLoader'
+import { adminBoundaryLayers } from '@/maps/layers/baseMapLayers'
 import { clusterFootprintLayers } from '@/maps/layers/clusterFootprintLayers'
 import { metricCellHeatmapLayers } from '@/maps/layers/metricCellHeatmapLayers'
 import { pointFeatureLayers } from '@/maps/layers/pointFeatureLayers'
@@ -12,28 +13,37 @@ const mvtSource = ({ analysisId, metricClusterId } = {}) => ({
   maxzoom: MVT_LAYERS.metricCluster.maxzoom,
 })
 
-export const createClusterLocatorStyle = ({ analysisId, metricClusters, selectedMetricClusterId, hoveredMetricClusterId }) => ({
-  version: 8,
-  sources: {
-    [MVT_SOURCE_ID]: mvtSource({ analysisId }),
-  },
-  layers: [
-    backgroundLayer(),
-    ...adminBoundaryLayers(),
-    ...clusterFootprintLayers({ metricClusters, selectedMetricClusterId, hoveredMetricClusterId }),
-    ...pointFeatureLayers(),
-  ],
-})
+const composeMapStyle = async ({ source, layers }) => {
+  const style = await loadBasemapStyle()
 
-export const createClusterHeatmapStyle = ({ analysisId, metricClusterId }) => ({
-  version: 8,
-  sources: {
-    [MVT_SOURCE_ID]: mvtSource({ analysisId, metricClusterId }),
-  },
-  layers: [
-    backgroundLayer(),
-    ...adminBoundaryLayers(),
-    ...metricCellHeatmapLayers(),
-    ...pointFeatureLayers(),
-  ],
-})
+  return {
+    ...style,
+    sources: {
+      ...(style.sources || {}),
+      [MVT_SOURCE_ID]: source,
+    },
+    layers: [
+      ...(style.layers || []),
+      ...layers,
+    ],
+  }
+}
+
+export const createClusterLocatorStyle = ({ analysisId, metricClusters, selectedMetricClusterId, hoveredMetricClusterId }) =>
+  composeMapStyle({
+    source: mvtSource({ analysisId }),
+    layers: [
+      ...adminBoundaryLayers(),
+      ...clusterFootprintLayers({ metricClusters, selectedMetricClusterId, hoveredMetricClusterId }),
+    ],
+  })
+
+export const createClusterHeatmapStyle = ({ analysisId, metricClusterId }) =>
+  composeMapStyle({
+    source: mvtSource({ analysisId, metricClusterId }),
+    layers: [
+      ...adminBoundaryLayers(),
+      ...metricCellHeatmapLayers(),
+      ...pointFeatureLayers(),
+    ],
+  })

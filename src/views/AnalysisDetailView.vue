@@ -119,6 +119,10 @@ const selectCluster = (metricCluster, options = {}) => {
     locatorMapRef.value?.focusCluster(metricCluster)
   }
 
+  if (options.centerMap) {
+    locatorMapRef.value?.centerCluster(metricCluster)
+  }
+
   if (options.scrollList) {
     scrollToClusterItem(metricCluster.id)
   }
@@ -126,6 +130,12 @@ const selectCluster = (metricCluster, options = {}) => {
 
 const fitAllClusters = () => {
   locatorMapRef.value?.fitAllClusters()
+}
+
+const locateSelectedCluster = () => {
+  if (!selectedCluster.value) return
+
+  locatorMapRef.value?.focusCluster(selectedCluster.value)
 }
 
 watch(() => props.analysisId, async () => {
@@ -141,6 +151,10 @@ watch(metricClusterRows, async (rows) => {
 
   if (selectedMetricClusterId.value && !rows.some((metricCluster) => sameClusterId(metricCluster.id, selectedMetricClusterId.value))) {
     selectedMetricClusterId.value = null
+  }
+
+  if (!selectedMetricClusterId.value) {
+    selectedMetricClusterId.value = rows[0].id
   }
 }, { deep: true })
 
@@ -189,8 +203,8 @@ onBeforeUnmount(() => {
             class="analysis-cluster-item"
             :class="{ active: sameClusterId(metricCluster.id, selectedMetricClusterId) }"
             tabindex="0"
-            @click="selectCluster(metricCluster, { focusMap: true })"
-            @keydown.enter="selectCluster(metricCluster, { focusMap: true })"
+            @click="selectCluster(metricCluster, { centerMap: true })"
+            @keydown.enter="selectCluster(metricCluster, { centerMap: true })"
           >
             <div class="cluster-item-main">
               <span class="cluster-index">{{ metricCluster.sequence }}</span>
@@ -235,6 +249,9 @@ onBeforeUnmount(() => {
           <div class="analysis-map-actions">
             <button class="btn-sm" type="button" :disabled="!mapReadyCount" @click="fitAllClusters">
               全部範圍
+            </button>
+            <button class="btn-sm" type="button" :disabled="!selectedCluster" @click="locateSelectedCluster">
+              定位選取
             </button>
             <strong>{{ mapReadyCount }} clusters</strong>
           </div>

@@ -10,17 +10,6 @@ export const backgroundLayer = () => ({
 
 export const adminBoundaryLayers = () => [
   {
-    id: 'admin-county-fill',
-    type: 'fill',
-    source: MVT_SOURCE_ID,
-    'source-layer': MVT_LAYERS.adminCounty.sourceLayer,
-    ...styleLayerZoom(MVT_LAYERS.adminCounty),
-    paint: {
-      'fill-color': '#e8edf3',
-      'fill-opacity': 0.72,
-    },
-  },
-  {
     id: 'admin-county-outline',
     type: 'line',
     source: MVT_SOURCE_ID,

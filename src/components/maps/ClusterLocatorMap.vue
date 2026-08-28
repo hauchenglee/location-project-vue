@@ -131,19 +131,36 @@ const focusCluster = (metricClusterOrKey, options = {}) => {
   fitDefaultArea(options)
 }
 
+const centerCluster = (metricClusterOrKey, options = {}) => {
+  if (!map.value || !metricClusterOrKey) return
+
+  const metricCluster = typeof metricClusterOrKey === 'object'
+    ? metricClusterOrKey
+    : props.metricClusters.find((cluster) => sameClusterId(cluster.id, metricClusterOrKey))
+  const center = getClusterCenter(metricCluster)
+  if (!center) return
+
+  const currentZoom = map.value.getZoom()
+  const duration = options.animate === false ? 0 : 320
+
+  map.value.easeTo({
+    center,
+    zoom: Math.max(currentZoom, 10),
+    duration,
+  })
+}
+
 const findClusterByFeature = (feature) => {
   const metricClusterId = Number(feature?.properties?.id)
   return props.metricClusters.find((cluster) => sameClusterId(cluster.id, metricClusterId))
 }
 
-const refreshMap = (options = {}) => {
+const refreshMap = async (options = {}) => {
   if (!map.value) return
 
-  setStyle(createLocatorStyle(), () => {
+  setStyle(await createLocatorStyle(), () => {
     renderLocatorMarkers()
-    if (props.selectedMetricClusterId) {
-      focusCluster(props.selectedMetricClusterId)
-    } else if (options.fitAll !== false) {
+    if (options.fitAll !== false) {
       fitAllClusters()
     }
   })
@@ -152,17 +169,13 @@ const refreshMap = (options = {}) => {
 const initializeMap = async () => {
   const mapInstance = await initializeMapLibre({
     container: mapEl,
-    style: createLocatorStyle(),
+    style: await createLocatorStyle(),
   })
   if (!mapInstance) return
 
   mapInstance.on('load', async () => {
     await resizeAfterLayout()
-    if (props.selectedMetricClusterId) {
-      focusCluster(props.selectedMetricClusterId, { animate: false })
-    } else {
-      fitAllClusters()
-    }
+    fitAllClusters()
     renderLocatorMarkers()
   })
 
@@ -170,7 +183,7 @@ const initializeMap = async () => {
     const metricCluster = findClusterByFeature(event.features?.[0])
     if (!metricCluster) return
 
-    focusCluster(metricCluster)
+    centerCluster(metricCluster)
     emit('select-cluster', metricCluster)
   })
 
@@ -196,9 +209,7 @@ watch(() => props.metricClusters, async (metricClusters) => {
   await nextTick()
   updateLocatorPaint()
   renderLocatorMarkers()
-  if (!props.selectedMetricClusterId) {
-    fitAllClusters()
-  }
+  fitAllClusters()
 }, { deep: true })
 
 watch(() => props.selectedMetricClusterId, () => {
@@ -215,6 +226,7 @@ onBeforeUnmount(clearMarkers)
 defineExpose({
   fitAllClusters,
   focusCluster,
+  centerCluster,
 })
 </script>
 

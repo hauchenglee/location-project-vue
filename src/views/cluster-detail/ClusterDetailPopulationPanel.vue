@@ -231,18 +231,18 @@ const selectedAgeGroupDetail = computed(() => {
 <style scoped>
 .population-panel {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .population-section,
 .population-data-card {
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
 }
 
 .population-section {
-  padding: 18px;
+  padding: 22px;
 }
 
 .population-section-head,
@@ -251,28 +251,28 @@ const selectedAgeGroupDetail = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .population-section-kicker {
   display: inline-flex;
   align-items: center;
-  color: #2f7df0;
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .population-section-kicker.raw {
-  color: #0f766e;
+  color: var(--muted);
 }
 
 .population-section h3,
 .population-card-head h4 {
   margin: 0;
-  color: #0f172a;
-  font-weight: 800;
+  color: #111318;
+  font-weight: var(--title-weight);
 }
 
 .population-section h3 {
@@ -280,17 +280,17 @@ const selectedAgeGroupDetail = computed(() => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .population-card-head h4 {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .population-card-head span {
-  color: #64748b;
+  color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 750;
   line-height: 1.5;
 }
 
@@ -301,21 +301,21 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .population-rank-card {
-  min-height: 112px;
+  min-height: 104px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
-  border: 1px solid #d9e7fb;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: linear-gradient(180deg, #ffffff, #f5f9ff);
+  background: #ffffff;
 }
 
 .population-rank-card span,
 .population-structure-item span {
-  color: #64748b;
+  color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--emphasis-weight);
 }
 
 .population-rank-card-head {
@@ -329,9 +329,9 @@ const selectedAgeGroupDetail = computed(() => {
 .population-rank-card-head small {
   display: inline-flex;
   align-items: center;
-  color: #1f67d8;
+  color: var(--primary-dark);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--emphasis-weight);
   line-height: 1.4;
 }
 
@@ -339,55 +339,55 @@ const selectedAgeGroupDetail = computed(() => {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  color: #1f67d8;
-  font-size: 34px;
-  font-weight: 900;
+  color: var(--primary-dark);
+  font-size: 28px;
+  font-weight: var(--emphasis-weight);
   line-height: 1;
 }
 
 .population-rank-card strong small {
-  color: #64748b;
+  color: var(--muted);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: var(--emphasis-weight);
 }
 
 .population-data-grid {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .population-data-card {
-  padding: 16px;
+  padding: 18px;
 }
 
 .population-structure-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .population-structure-item {
-  min-height: 104px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 14px;
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f6f8fb;
+  background: var(--surface-soft);
 }
 
 .population-structure-item strong {
-  color: #0f172a;
-  font-size: 24px;
-  font-weight: 900;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: var(--emphasis-weight);
   line-height: 1.1;
 }
 
 .population-structure-item small {
-  color: #94a3b8;
+  color: var(--muted-2);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .age-card {
@@ -422,7 +422,7 @@ const selectedAgeGroupDetail = computed(() => {
 
 .age-bars {
   display: grid;
-  gap: 9px;
+  gap: 10px;
 }
 
 .age-bar-row {
@@ -430,13 +430,13 @@ const selectedAgeGroupDetail = computed(() => {
   grid-template-columns: 54px minmax(0, 1fr) 82px;
   align-items: center;
   gap: 12px;
-  min-height: 28px;
+  min-height: 30px;
 }
 
 .age-label {
-  color: #475569;
+  color: #353943;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--emphasis-weight);
 }
 
 .age-bar-track {
@@ -460,9 +460,9 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .age-bar-row strong {
-  color: #334155;
+  color: var(--text);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--emphasis-weight);
   text-align: right;
 }
 

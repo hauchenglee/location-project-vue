@@ -17,6 +17,9 @@
   --shadow-soft: 0 18px 44px rgba(20, 30, 45, 0.08);
   --page-gutter: 32px;
   --form-shell: 820px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --title-weight: 700;
+  --emphasis-weight: 700;
 }
 
 * {
@@ -35,7 +38,7 @@ body {
   min-height: 100vh;
   color: var(--text);
   background: var(--page-bg);
-  font-family: "Inter", "Avenir Next", "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   letter-spacing: 0;
 }
@@ -107,7 +110,7 @@ button:disabled {
   margin: 0;
   color: #20242b;
   font-size: 18px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
   line-height: 1.05;
 }
 
@@ -402,7 +405,7 @@ button:disabled {
 }
 
 .analysis-cluster-head {
-  padding: 24px;
+  padding: 22px;
   border-bottom: 1px solid var(--line);
   background: #ffffff;
 }
@@ -410,31 +413,31 @@ button:disabled {
 .analysis-cluster-head h2 {
   margin: 0;
   color: #08090d;
-  font-size: 25px;
-  font-weight: 850;
-  line-height: 1.2;
+  font-size: 18px;
+  font-weight: var(--title-weight);
+  line-height: 1.25;
 }
 
 .analysis-cluster-head p {
-  margin: 7px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
 .analysis-cluster-list {
   min-height: 0;
   overflow: auto;
-  padding: 14px;
-  background: #fbfcfe;
+  padding: 18px;
+  background: var(--surface-soft);
 }
 
 .analysis-cluster-item {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  margin-bottom: 10px;
-  padding: 15px;
+  margin-bottom: 12px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -457,13 +460,13 @@ button:disabled {
 .cluster-item-main {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   min-width: 0;
 }
 
 .cluster-index {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -472,14 +475,14 @@ button:disabled {
   background: var(--surface-active);
   color: var(--primary-dark);
   font-size: 13px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .cluster-item-main h3 {
   margin: 0;
   color: #101217;
-  font-size: 15px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: var(--title-weight);
   line-height: 1.25;
 }
 
@@ -487,7 +490,7 @@ button:disabled {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .cluster-score-row {
@@ -499,15 +502,15 @@ button:disabled {
 
 .cluster-score-row strong {
   color: var(--primary-dark);
-  font-size: 34px;
-  font-weight: 900;
+  font-size: 28px;
+  font-weight: var(--emphasis-weight);
   line-height: 1;
 }
 
 .cluster-score-row span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .analysis-map-pane {
@@ -531,7 +534,7 @@ button:disabled {
   margin: 0;
   color: #111318;
   font-size: 16px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .analysis-map-top p {
@@ -551,7 +554,7 @@ button:disabled {
 .analysis-map-actions strong {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .analysis-map-stage {
@@ -578,7 +581,7 @@ button:disabled {
   color: #ffffff;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--emphasis-weight);
   line-height: 1;
   transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
 }
@@ -618,9 +621,9 @@ button:disabled {
 .detail-page-title {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 24px;
+  gap: 18px;
   align-items: start;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .detail-hero-main {
@@ -631,29 +634,29 @@ button:disabled {
 .cluster-detail-header h2 {
   margin: 0;
   color: #08090d;
-  font-size: 31px;
-  font-weight: 850;
-  line-height: 1.15;
+  font-size: 22px;
+  font-weight: var(--title-weight);
+  line-height: 1.2;
 }
 
 .detail-hero p,
 .cluster-detail-header p {
-  margin: 9px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .detail-title-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
 .detail-back-button {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: grid;
   flex-shrink: 0;
   place-items: center;
@@ -664,7 +667,7 @@ button:disabled {
   color: #101217;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
@@ -675,7 +678,7 @@ button:disabled {
 }
 
 .detail-back-button span {
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -713,7 +716,7 @@ button:disabled {
   margin: 0;
   color: #08090d;
   font-size: 31px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
   letter-spacing: 0;
   line-height: 1.12;
 }
@@ -759,7 +762,7 @@ button:disabled {
   padding-bottom: 10px;
   color: #111318;
   font-size: 16px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .create-layout .form-shell > .section > .section-header h3::after {
@@ -804,7 +807,7 @@ button:disabled {
 .cluster-detail-header {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .cluster-header-summary {
@@ -817,11 +820,11 @@ button:disabled {
 }
 
 .cluster-metric {
-  min-height: 34px;
+  min-height: 32px;
   display: inline-flex;
   align-items: baseline;
   gap: 7px;
-  padding: 6px 11px;
+  padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -832,8 +835,8 @@ button:disabled {
 
 .cluster-metric strong {
   color: var(--text);
-  font-size: 17px;
-  font-weight: 850;
+  font-size: 15px;
+  font-weight: var(--emphasis-weight);
 }
 
 .cluster-detail-tabs {
@@ -841,7 +844,7 @@ button:disabled {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
   gap: 0;
-  margin: 18px 0 22px;
+  margin: 18px 0 20px;
   padding: 0;
   border-bottom: 1px solid var(--line);
 }
@@ -849,7 +852,7 @@ button:disabled {
 .cluster-detail-tab {
   position: relative;
   width: 100%;
-  min-height: 42px;
+  min-height: 38px;
   padding: 9px 8px;
   border: 0;
   border-radius: 0;
@@ -857,7 +860,7 @@ button:disabled {
   color: var(--muted);
   cursor: pointer;
   font-size: 13px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
   text-align: center;
   white-space: nowrap;
   transition: color 0.18s ease, background 0.18s ease;
@@ -892,9 +895,9 @@ button:disabled {
 
 .cluster-spatial-toolbar h3 {
   margin: 0;
-  color: #101217;
-  font-size: 17px;
-  font-weight: 850;
+  color: #111318;
+  font-size: 16px;
+  font-weight: var(--title-weight);
 }
 
 .cluster-spatial-toolbar p {
@@ -902,6 +905,7 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   font-weight: 750;
+  line-height: 1.55;
 }
 
 .cluster-heatmap-legend {
@@ -911,7 +915,7 @@ button:disabled {
   gap: 8px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .cluster-heatmap-legend i {
@@ -948,11 +952,11 @@ button:disabled {
 
 .cluster-data-panel {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .cluster-data-section {
-  padding: 18px;
+  padding: 22px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -963,7 +967,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .cluster-data-section h3 {
@@ -973,22 +977,22 @@ button:disabled {
   flex-wrap: wrap;
   margin: 0;
   color: #101217;
-  font-size: 15px;
-  font-weight: 850;
+  font-size: 16px;
+  font-weight: var(--title-weight);
 }
 
 .cluster-data-kicker {
   display: inline-flex;
   align-items: center;
-  color: var(--primary);
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .cluster-data-kicker.raw {
-  color: #0d8273;
+  color: var(--muted);
 }
 
 .cluster-rank-grid {
@@ -1006,20 +1010,20 @@ button:disabled {
 }
 
 .cluster-rank-card {
-  min-height: 112px;
+  min-height: 104px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
-  border: 1px solid #d9e7fb;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: linear-gradient(180deg, #ffffff, #f5f9ff);
+  background: #ffffff;
 }
 
 .cluster-rank-card span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .cluster-rank-card strong {
@@ -1027,15 +1031,15 @@ button:disabled {
   align-items: baseline;
   gap: 6px;
   color: var(--primary-dark);
-  font-size: 30px;
-  font-weight: 900;
+  font-size: 28px;
+  font-weight: var(--emphasis-weight);
   line-height: 1;
 }
 
 .cluster-rank-card strong small {
   color: var(--muted);
   font-size: 14px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .cluster-business-table table {
@@ -1112,7 +1116,7 @@ button:disabled {
   color: var(--muted);
   cursor: pointer;
   font-size: 13px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
   transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -1154,7 +1158,7 @@ button:disabled {
 
 .range-choice strong {
   font-size: 13px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
   line-height: 1.2;
 }
 
@@ -1315,7 +1319,7 @@ button:disabled {
   background: transparent;
   color: var(--primary-dark);
   font-size: 16px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
   cursor: pointer;
 }
 
@@ -1359,7 +1363,7 @@ button:disabled {
 
 .industry-option.selected {
   color: var(--primary-dark);
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .industry-option-main {
@@ -1373,7 +1377,7 @@ button:disabled {
   flex: 0 0 auto;
   color: var(--primary);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: var(--emphasis-weight);
 }
 
 .industry-name {
@@ -1419,7 +1423,7 @@ button:disabled {
 .location-card-head strong {
   color: var(--text);
   font-size: 14px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .location-card-head span {
@@ -1476,7 +1480,7 @@ button:disabled {
   margin: 0;
   color: var(--text);
   font-size: 15px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .page-loading-card p {
@@ -1592,7 +1596,7 @@ button:disabled {
 .map-top-left h3 {
   margin: 0;
   font-size: 15px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .map-top-left p {
@@ -1635,7 +1639,7 @@ button:disabled {
   margin: 0;
   color: #111318;
   font-size: 15px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
   line-height: 1.25;
 }
 
@@ -1670,7 +1674,7 @@ button:disabled {
   background: #ffffff;
   color: var(--muted);
   font-size: 15px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
 }
 
 .maplibre-stage {
@@ -1747,7 +1751,7 @@ thead th {
   background: #ffffff;
   color: #08090d;
   font-size: 13px;
-  font-weight: 850;
+  font-weight: var(--title-weight);
   text-align: left;
   white-space: nowrap;
 }
@@ -1787,9 +1791,11 @@ tbody tr:hover {
 }
 
 .case-id {
-  color: #0d1117;
-  font-weight: 850;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: var(--title-weight);
   letter-spacing: 0;
+  line-height: 1.4;
 }
 
 .sub {
@@ -1797,6 +1803,7 @@ tbody tr:hover {
   margin-top: 4px;
   color: var(--muted);
   font-size: 11px;
+  font-weight: 750;
   line-height: 1.5;
 }
 

@@ -77,18 +77,6 @@ const selectedCluster = computed(
 
 const mapReadyCount = computed(() => metricClusterRows.value.length)
 
-const statusLabelMap = {
-  COMPLETED: '完成',
-  PROCESSING: '處理中',
-  PENDING: '待處理',
-  FAILED: '失敗',
-}
-
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  return value
-}
-
 const formatLocation = (analysis) => {
   const district = [analysis.countyName, analysis.townName].filter(Boolean).join(' / ')
 
@@ -181,12 +169,6 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="analysis-meta-strip">
-            <span class="badge done">{{ statusLabelMap[baseAnalysis.status] || '-' }}</span>
-            <span>{{ metricClusterRows.length }} 個生活圈</span>
-            <span>{{ formatDateTime(baseAnalysis.createTime) }}</span>
-          </div>
-
           <div v-if="loadError" class="form-message error">{{ loadError }}</div>
         </div>
 
@@ -216,13 +198,6 @@ onBeforeUnmount(() => {
             <div class="cluster-score-row">
               <strong>{{ metricCluster.compositeScoreDisplay }}</strong>
               <span>綜合分數</span>
-            </div>
-
-            <div class="cluster-mini-metrics">
-              <span>商業 <strong>{{ toScore(metricCluster.businessScore) }}</strong></span>
-              <span>人口 <strong>{{ toScore(metricCluster.populationScore) }}</strong></span>
-              <span>人潮 <strong>{{ toScore(metricCluster.peopleScore) }}</strong></span>
-              <span>交通 <strong>{{ toScore(metricCluster.transitScore) }}</strong></span>
             </div>
 
             <button class="btn-sm primary" type="button" @click.stop="emit('view-cluster', metricCluster, baseAnalysis)">

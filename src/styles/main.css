@@ -422,17 +422,6 @@ button:disabled {
   line-height: 1.55;
 }
 
-.analysis-meta-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 18px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-}
-
 .analysis-cluster-list {
   min-height: 0;
   overflow: auto;
@@ -519,33 +508,6 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
-}
-
-.cluster-mini-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cluster-mini-metrics span {
-  min-height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 9px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.cluster-mini-metrics strong {
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 850;
 }
 
 .analysis-map-pane {
@@ -2029,7 +1991,4 @@ tbody tr:hover {
     flex-direction: column;
   }
 
-  .cluster-mini-metrics {
-    grid-template-columns: 1fr;
-  }
 }

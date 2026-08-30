@@ -44,8 +44,17 @@ export const caseApi = {
   },
 
   async getPopulation(payload) {
-    const response = await apiClient.post('/api/cluster/population/get', payload)
-    return unwrapResponse(response)
+    const [scoreResponse, overviewResponse, ageResponse] = await Promise.all([
+      apiClient.post('/api/cluster/population/score/get', payload),
+      apiClient.post('/api/cluster/population/overview/get', payload),
+      apiClient.post('/api/cluster/population/age/get', payload),
+    ])
+
+    return {
+      ...unwrapResponse(scoreResponse),
+      ...unwrapResponse(overviewResponse),
+      ...unwrapResponse(ageResponse),
+    }
   },
 
   async getPeople(payload) {

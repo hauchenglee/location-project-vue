@@ -85,12 +85,12 @@ const formatPercent = (value) => {
 const rankMetrics = computed(() => [
   {
     key: 'populationCountRank',
-    label: '人口數量',
+    label: '人口分數',
     value: formatRank(population.value?.populationCountRank),
   },
   {
     key: 'populationTargetAgeRank',
-    label: '目標年齡層人口',
+    label: '目標年齡層人口分數',
     note: `選擇：${selectedAgeGroupDetail.value.label}`,
     value: formatRank(population.value?.populationTargetAgeRank),
   },
@@ -102,10 +102,10 @@ const structureStats = computed(() => {
   const total = toNumber(population.value?.populationTotal) || male + female
 
   return [
-    { key: 'householdCount', label: '戶數', value: formatInteger(population.value?.householdCount), note: 'Households' },
-    { key: 'populationTotal', label: '總人口', value: formatInteger(total), note: 'Population' },
-    { key: 'populationMale', label: '男性', value: formatInteger(male), note: total ? formatPercent((male / total) * 100) : '-' },
-    { key: 'populationFemale', label: '女性', value: formatInteger(female), note: total ? formatPercent((female / total) * 100) : '-' },
+    { key: 'householdCount', label: '戶數', value: formatInteger(population.value?.householdCount) },
+    { key: 'populationTotal', label: '總人口', value: formatInteger(total) },
+    { key: 'populationMale', label: '男性', value: formatInteger(male), percent: total ? formatPercent((male / total) * 100) : '-' },
+    { key: 'populationFemale', label: '女性', value: formatInteger(female), percent: total ? formatPercent((female / total) * 100) : '-' },
   ]
 })
 
@@ -180,49 +180,55 @@ const selectedAgeGroupDetail = computed(() => {
       </div>
     </section>
 
-    <section class="population-section population-data-section">
+    <section class="population-section">
       <div class="population-section-head">
         <h3>
-          人口數據
-          <span class="population-section-kicker raw">Data</span>
+          人口結構
+          <span class="population-section-kicker">Overview</span>
         </h3>
       </div>
 
-      <div class="population-data-grid">
-        <article class="population-data-card">
-          <div class="population-card-head">
-            <h4>人口結構</h4>
-          </div>
+      <div class="population-structure-grid">
+        <div
+          v-for="stat in structureStats"
+          :key="stat.key"
+          class="population-structure-item"
+          :class="stat.key"
+        >
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+          <small
+            v-if="stat.percent"
+            class="population-structure-percent"
+            :class="stat.key"
+          >
+            {{ stat.percent }}
+          </small>
+        </div>
+      </div>
+    </section>
 
-          <div class="population-structure-grid">
-            <div v-for="stat in structureStats" :key="stat.key" class="population-structure-item">
-              <span>{{ stat.label }}</span>
-              <strong>{{ stat.value }}</strong>
-              <small>{{ stat.note }}</small>
-            </div>
-          </div>
-        </article>
+    <section class="population-section">
+      <div class="population-section-head">
+        <h3>
+          年齡分佈
+          <span class="population-section-kicker">Age</span>
+        </h3>
+        <div class="population-legend">
+          <span class="male">男性</span>
+          <span class="female">女性</span>
+        </div>
+      </div>
 
-        <article class="population-data-card age-card">
-          <div class="population-card-head">
-            <h4>年齡分佈</h4>
-            <div class="population-legend">
-              <span class="male">男性</span>
-              <span class="female">女性</span>
-            </div>
+      <div class="age-bars">
+        <div v-for="row in ageDistribution" :key="row.key" class="age-bar-row">
+          <span class="age-label">{{ row.label }}</span>
+          <div class="age-bar-track">
+            <div class="age-bar male" :style="{ width: `${row.malePercent}%` }"></div>
+            <div class="age-bar female" :style="{ width: `${row.femalePercent}%` }"></div>
           </div>
-
-          <div class="age-bars">
-            <div v-for="row in ageDistribution" :key="row.key" class="age-bar-row">
-              <span class="age-label">{{ row.label }}</span>
-              <div class="age-bar-track">
-                <div class="age-bar male" :style="{ width: `${row.malePercent}%` }"></div>
-                <div class="age-bar female" :style="{ width: `${row.femalePercent}%` }"></div>
-              </div>
-              <strong>{{ formatInteger(row.total) }}</strong>
-            </div>
-          </div>
-        </article>
+          <strong>{{ formatInteger(row.total) }}</strong>
+        </div>
       </div>
     </section>
   </div>
@@ -234,19 +240,14 @@ const selectedAgeGroupDetail = computed(() => {
   gap: 18px;
 }
 
-.population-section,
-.population-data-card {
+.population-section {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
-}
-
-.population-section {
   padding: 22px;
 }
 
-.population-section-head,
-.population-card-head {
+.population-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -264,34 +265,15 @@ const selectedAgeGroupDetail = computed(() => {
   text-transform: uppercase;
 }
 
-.population-section-kicker.raw {
-  color: var(--muted);
-}
-
-.population-section h3,
-.population-card-head h4 {
+.population-section h3 {
   margin: 0;
   color: #111318;
   font-weight: var(--title-weight);
-}
-
-.population-section h3 {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
   font-size: 16px;
-}
-
-.population-card-head h4 {
-  font-size: 15px;
-}
-
-.population-card-head span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.5;
 }
 
 .population-rank-grid {
@@ -351,15 +333,6 @@ const selectedAgeGroupDetail = computed(() => {
   font-weight: var(--emphasis-weight);
 }
 
-.population-data-grid {
-  display: grid;
-  gap: 18px;
-}
-
-.population-data-card {
-  padding: 18px;
-}
-
 .population-structure-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -367,11 +340,12 @@ const selectedAgeGroupDetail = computed(() => {
 }
 
 .population-structure-item {
-  min-height: 100px;
+  position: relative;
+  min-height: 104px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px;
+  padding: 14px 14px 24px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-soft);
@@ -384,14 +358,29 @@ const selectedAgeGroupDetail = computed(() => {
   line-height: 1.1;
 }
 
-.population-structure-item small {
-  color: var(--muted-2);
-  font-size: 11px;
-  font-weight: 750;
+.population-structure-item.populationMale strong,
+.population-structure-item.populationFemale strong {
+  padding-right: 72px;
 }
 
-.age-card {
-  min-height: 320px;
+.population-structure-percent {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--primary-dark);
+  background: rgba(47, 125, 240, 0.08);
+  font-size: 12px;
+  font-weight: var(--emphasis-weight);
+  line-height: 1.35;
+}
+
+.population-structure-percent.populationFemale {
+  color: #9d5800;
+  background: rgba(255, 159, 28, 0.12);
 }
 
 .population-legend {

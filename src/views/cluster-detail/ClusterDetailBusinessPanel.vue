@@ -84,7 +84,6 @@ const businessEntities = computed(() =>
           <thead>
             <tr>
               <th>產業</th>
-              <th>代碼</th>
               <th>大類</th>
               <th>店家數</th>
               <th>層級</th>
@@ -93,14 +92,13 @@ const businessEntities = computed(() =>
           </thead>
           <tbody>
             <tr v-if="!industries.length">
-              <td colspan="6" class="empty-cell">目前沒有商業產業資料。</td>
+              <td colspan="5" class="empty-cell">目前沒有商業產業資料。</td>
             </tr>
             <tr v-for="industry in industries" :key="industry.industryId || industry.industryCode">
               <td>
                 <span class="case-id">{{ industry.name || '-' }}</span>
                 <span class="sub">{{ industry.definition || '-' }}</span>
               </td>
-              <td>{{ industry.industryCode || '-' }}</td>
               <td>{{ industry.sectionCode || '-' }}</td>
               <td>{{ formatInteger(industry.businessCount) }}</td>
               <td>{{ industry.levelNo ?? '-' }}</td>
@@ -146,19 +144,15 @@ const businessEntities = computed(() =>
               <td>{{ [businessEntity.countyName, businessEntity.townName].filter(Boolean).join(' / ') || '-' }}</td>
               <td>
                 {{ businessEntity.industryName || '-' }}
-                <span class="sub">{{ businessEntity.industryCode || '-' }}</span>
               </td>
               <td>
                 {{ businessEntity.industryName1 || '-' }}
-                <span class="sub">{{ businessEntity.industryCode1 || '-' }}</span>
               </td>
               <td>
                 {{ businessEntity.industryName2 || '-' }}
-                <span class="sub">{{ businessEntity.industryCode2 || '-' }}</span>
               </td>
               <td>
                 {{ businessEntity.industryName3 || '-' }}
-                <span class="sub">{{ businessEntity.industryCode3 || '-' }}</span>
               </td>
               <td>{{ formatGeometrySummary(businessEntity.geom) }}</td>
             </tr>

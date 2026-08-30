@@ -120,7 +120,7 @@ const selectedLevelLabel = computed(() =>
 const displayValue = computed(() => {
   if (!props.modelValue) return props.emptyLabel || props.placeholder
   if (!selectedOption.value) return props.modelValue
-  return `${selectedOption.value.name} (${selectedOption.value.industryCode})`
+  return selectedOption.value.name
 })
 
 const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
@@ -276,7 +276,7 @@ watch(normalizedKeyword, (value) => {
           ref="searchInput"
           v-model="keyword"
           type="search"
-          placeholder="搜尋代碼、名稱或定義"
+          placeholder="搜尋名稱或定義"
         />
       </div>
 
@@ -305,7 +305,6 @@ watch(normalizedKeyword, (value) => {
             @click="selectValue(industry.industryCode)"
           >
             <span class="industry-option-main">
-              <span class="industry-code">{{ industry.industryCode }}</span>
               <span class="industry-name">{{ industry.name }}</span>
               <span class="industry-level">第 {{ industry.levelNo || '-' }} 層</span>
             </span>

@@ -175,10 +175,6 @@ const submitAnalysis = async () => {
     <section class="left">
       <div class="left-scroll">
         <div class="form-shell">
-          <div class="page-title">
-            <h2>提交分析</h2>
-          </div>
-
           <div class="section">
             <div class="section-header">
               <h3>分析目標</h3>

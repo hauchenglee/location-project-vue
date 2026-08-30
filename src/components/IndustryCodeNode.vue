@@ -58,7 +58,6 @@ const handleOptionClick = () => {
         @click="handleOptionClick"
       >
         <span class="industry-option-main">
-          <span class="industry-code">{{ industry.industryCode }}</span>
           <span class="industry-name">{{ industry.name }}</span>
           <span class="industry-level">第 {{ industry.levelNo || '-' }} 層</span>
         </span>

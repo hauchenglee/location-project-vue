@@ -115,11 +115,7 @@ onMounted(() => {
 <template>
   <main class="main records-layout">
     <div class="content-scroll">
-        <div class="content-shell">
-          <div class="page-title">
-            <h2>分析列表</h2>
-          </div>
-
+      <div class="content-shell">
         <section class="section">
           <div class="section-header">
             <h3>搜尋條件</h3>
@@ -167,10 +163,6 @@ onMounted(() => {
         </section>
 
         <section class="section">
-          <div class="section-header">
-            <h3>分析列表</h3>
-          </div>
-
           <div v-if="loadError" class="form-message error">{{ loadError }}</div>
 
           <div class="table-wrap interactive-table">

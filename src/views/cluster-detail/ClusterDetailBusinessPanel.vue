@@ -11,7 +11,6 @@ const props = defineProps({
 const businessScoreVo = computed(() => props.vo?.businessScoreVo || {})
 const businessOverviewVo = computed(() => props.vo?.businessOverviewVo || {})
 const sameIndustryStructureVo = computed(() => props.vo?.sameIndustryStructureVo || {})
-const targetIndustryCompetitionVo = computed(() => props.vo?.targetIndustryCompetitionVo || {})
 
 const formatInteger = (value) => {
   const number = Number(value)
@@ -61,13 +60,10 @@ const formatDistance = (value) => {
 }
 
 const scoreMetrics = computed(() => [
-  { key: 'compositeScore', label: '綜合分數', value: formatRank(businessScoreVo.value.compositeScore) },
-  { key: 'businessScore', label: '商業分數', value: formatRank(businessScoreVo.value.businessScore) },
   { key: 'businessCountRank', label: '店家總數分數', value: formatRank(businessScoreVo.value.businessCountRank) },
   { key: 'industryCountRank', label: '產業類別數分數', value: formatRank(businessScoreVo.value.industryCountRank) },
-  { key: 'hhiRank', label: 'HHI 集中度分數', value: formatRank(businessScoreVo.value.hhiRank) },
-  { key: 'entropyRank', label: 'Shannon Entropy 多樣性分數', value: formatRank(businessScoreVo.value.entropyRank) },
-  { key: 'competitionImpactRank', label: '競品壓力分數', value: formatRank(businessScoreVo.value.competitionImpactRank) },
+  { key: 'hhiRank', label: '產業集中度分數', value: formatRank(businessScoreVo.value.hhiRank) },
+  { key: 'entropyRank', label: '產業多樣性分數', value: formatRank(businessScoreVo.value.entropyRank) },
 ])
 
 const overviewStats = computed(() => [
@@ -76,8 +72,8 @@ const overviewStats = computed(() => [
   { key: 'storeDensityPerSquareKm', label: '每平方公里店家密度', value: formatDecimal(businessOverviewVo.value.storeDensityPerSquareKm) },
   { key: 'catchmentAverageStoreCount', label: '周邊平均店家數', value: formatDecimal(businessOverviewVo.value.catchmentAverageStoreCount) },
   { key: 'catchmentAverageIndustryCount', label: '周邊平均產業數', value: formatDecimal(businessOverviewVo.value.catchmentAverageIndustryCount) },
-  { key: 'catchmentAverageHhi', label: '周邊平均 HHI 集中度', value: formatDecimal(businessOverviewVo.value.catchmentAverageHhi, 4) },
-  { key: 'catchmentAverageEntropy', label: '周邊平均 Shannon Entropy 多樣性', value: formatDecimal(businessOverviewVo.value.catchmentAverageEntropy, 4) },
+  { key: 'catchmentAverageHhi', label: '周邊平均產業集中度', value: formatDecimal(businessOverviewVo.value.catchmentAverageHhi, 4) },
+  { key: 'catchmentAverageEntropy', label: '周邊平均產業多樣性', value: formatDecimal(businessOverviewVo.value.catchmentAverageEntropy, 4) },
 ])
 
 const sameIndustrySummary = computed(() => [
@@ -85,14 +81,6 @@ const sameIndustrySummary = computed(() => [
   { key: 'industryName', label: '同類產業大類名稱', value: sameIndustryStructureVo.value.industryName || '-' },
   { key: 'storeCount', label: '同類產業店家數', value: formatInteger(sameIndustryStructureVo.value.storeCount) },
   { key: 'storeShare', label: '同類產業佔全部店家比例', value: formatShare(sameIndustryStructureVo.value.storeShare) },
-])
-
-const targetIndustrySummary = computed(() => [
-  { key: 'industryCode', label: '目標產業代碼', value: targetIndustryCompetitionVo.value.industryCode || '-' },
-  { key: 'industryName', label: '目標產業名稱', value: targetIndustryCompetitionVo.value.industryName || '-' },
-  { key: 'coreStoreCount', label: '分群內同業數', value: formatInteger(targetIndustryCompetitionVo.value.coreStoreCount) },
-  { key: 'nearbyStoreCount', label: '周邊同業數', value: formatInteger(targetIndustryCompetitionVo.value.nearbyStoreCount) },
-  { key: 'nearestDistanceMeters', label: '最近同業距離', value: formatDistance(targetIndustryCompetitionVo.value.nearestDistanceMeters) },
 ])
 
 const sameIndustryGroups = computed(() => (
@@ -103,8 +91,8 @@ const sameIndustryDetails = computed(() => (
   Array.isArray(sameIndustryStructureVo.value.details) ? sameIndustryStructureVo.value.details : []
 ))
 
-const competitors = computed(() => (
-  Array.isArray(targetIndustryCompetitionVo.value.competitors) ? targetIndustryCompetitionVo.value.competitors : []
+const sameIndustryStores = computed(() => (
+  Array.isArray(sameIndustryStructureVo.value.sameIndustryStores) ? sameIndustryStructureVo.value.sameIndustryStores : []
 ))
 </script>
 
@@ -114,7 +102,6 @@ const competitors = computed(() => (
       <div class="business-section-head">
         <h3>
           商業指標
-          <span class="business-section-kicker">BusinessScoreVo</span>
         </h3>
       </div>
 
@@ -130,7 +117,6 @@ const competitors = computed(() => (
       <div class="business-section-head">
         <h3>
           商業總覽
-          <span class="business-section-kicker">BusinessOverviewVo</span>
         </h3>
       </div>
 
@@ -146,7 +132,6 @@ const competitors = computed(() => (
       <div class="business-section-head">
         <h3>
           同類產業結構
-          <span class="business-section-kicker">SameIndustryStructureVo</span>
         </h3>
       </div>
 
@@ -198,31 +183,21 @@ const competitors = computed(() => (
           </div>
         </article>
       </div>
-    </section>
 
-    <section class="business-section">
-      <div class="business-section-head">
-        <h3>
-          同業競品
-          <span class="business-section-kicker">TargetIndustryCompetitionVo</span>
-        </h3>
-      </div>
+      <div class="business-same-industry-store-list">
+        <div class="business-table-head">
+          <h4>分群內同類產業店家清單</h4>
+        </div>
 
-      <div class="business-stat-grid compact">
-        <article v-for="stat in targetIndustrySummary" :key="stat.key" class="business-stat-card">
-          <span>{{ stat.label }}</span>
-          <strong>{{ stat.value }}</strong>
-        </article>
-      </div>
-
-      <div class="business-competitor-list">
-        <div v-if="!competitors.length" class="business-empty">目前沒有鄰近同業資料。</div>
-        <div v-for="competitor in competitors" :key="competitor.id || competitor.name" class="business-competitor-row">
-          <div>
-            <strong>{{ competitor.name || '-' }}</strong>
-            <span>{{ competitor.address || '-' }}</span>
+        <div class="business-list">
+          <div v-if="!sameIndustryStores.length" class="business-empty">目前沒有分群內同類產業店家資料。</div>
+          <div v-for="store in sameIndustryStores" :key="store.id || store.name" class="business-store-row">
+            <div>
+              <strong>{{ store.name || '-' }}</strong>
+              <span>{{ store.address || '-' }}</span>
+            </div>
+            <small>{{ formatDistance(store.distanceMeters) }}</small>
           </div>
-          <small>{{ formatDistance(competitor.distanceMeters) }}</small>
         </div>
       </div>
     </section>
@@ -261,15 +236,6 @@ const competitors = computed(() => (
   font-weight: var(--title-weight);
 }
 
-.business-section-kicker {
-  display: inline-flex;
-  align-items: center;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
 .business-rank-grid,
 .business-stat-grid {
   display: grid;
@@ -278,7 +244,7 @@ const competitors = computed(() => (
 }
 
 .business-rank-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .business-stat-grid.compact {
@@ -358,18 +324,17 @@ const competitors = computed(() => (
   font-weight: var(--title-weight);
 }
 
-.business-list,
-.business-competitor-list {
+.business-list {
   display: grid;
   gap: 8px;
 }
 
-.business-competitor-list {
+.business-same-industry-store-list {
   margin-top: 12px;
 }
 
 .business-list-row,
-.business-competitor-row {
+.business-store-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -383,14 +348,14 @@ const competitors = computed(() => (
 }
 
 .business-list-row > div:first-child,
-.business-competitor-row > div {
+.business-store-row > div {
   min-width: 0;
   display: grid;
   gap: 4px;
 }
 
 .business-list-row strong,
-.business-competitor-row strong {
+.business-store-row strong {
   overflow: hidden;
   color: var(--text);
   font-size: 13px;
@@ -401,7 +366,7 @@ const competitors = computed(() => (
 }
 
 .business-list-row span,
-.business-competitor-row span {
+.business-store-row span {
   overflow: hidden;
   color: var(--muted);
   font-size: 12px;
@@ -419,7 +384,7 @@ const competitors = computed(() => (
 }
 
 .business-row-metrics span,
-.business-competitor-row small {
+.business-store-row small {
   color: var(--text);
   font-size: 13px;
   font-weight: var(--emphasis-weight);
@@ -468,7 +433,7 @@ const competitors = computed(() => (
   }
 
   .business-list-row,
-  .business-competitor-row {
+  .business-store-row {
     align-items: flex-start;
     flex-direction: column;
   }

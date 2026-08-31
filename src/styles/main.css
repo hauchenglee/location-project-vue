@@ -1042,10 +1042,6 @@ button:disabled {
   font-weight: var(--emphasis-weight);
 }
 
-.cluster-business-table table {
-  min-width: 820px;
-}
-
 .grid-2,
 .grid-4 {
   display: grid;

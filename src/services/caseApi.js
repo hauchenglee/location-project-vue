@@ -39,8 +39,19 @@ export const caseApi = {
   },
 
   async getBusiness(payload) {
-    const response = await apiClient.post('/api/cluster/business/get', payload)
-    return unwrapResponse(response)
+    const [scoreResponse, overviewResponse, sameIndustryResponse, competitionResponse] = await Promise.all([
+      apiClient.post('/api/cluster/business/score/get', payload),
+      apiClient.post('/api/cluster/business/overview/get', payload),
+      apiClient.post('/api/cluster/business/same-industry/get', payload),
+      apiClient.post('/api/cluster/business/competition/get', payload),
+    ])
+
+    return {
+      businessScoreVo: unwrapResponse(scoreResponse),
+      businessOverviewVo: unwrapResponse(overviewResponse),
+      sameIndustryStructureVo: unwrapResponse(sameIndustryResponse),
+      targetIndustryCompetitionVo: unwrapResponse(competitionResponse),
+    }
   },
 
   async getPopulation(payload) {

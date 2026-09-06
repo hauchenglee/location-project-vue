@@ -50,6 +50,7 @@ export const MVT_LAYERS = Object.freeze({
       peoplePeakRank: 'people_peak_rank',
       peopleAverageRank: 'people_average_rank',
       metroImpactRank: 'metro_impact_rank',
+      busImpactRank: 'bus_impact_rank',
     }),
   }),
   businessEntity: Object.freeze({

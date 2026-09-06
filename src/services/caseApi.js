@@ -60,20 +60,36 @@ export const caseApi = {
     ])
 
     return {
-      ...unwrapResponse(scoreResponse),
-      ...unwrapResponse(overviewResponse),
-      ...unwrapResponse(ageResponse),
+      populationScoreVo: unwrapResponse(scoreResponse),
+      populationOverviewVo: unwrapResponse(overviewResponse),
+      populationAgeVo: unwrapResponse(ageResponse),
     }
   },
 
   async getPeople(payload) {
-    const response = await apiClient.post('/api/cluster/people/get', payload)
-    return unwrapResponse(response)
+    const [scoreResponse, overviewResponse, timePeriodResponse] = await Promise.all([
+      apiClient.post('/api/cluster/people/score/get', payload),
+      apiClient.post('/api/cluster/people/overview/get', payload),
+      apiClient.post('/api/cluster/people/time-period/get', payload),
+    ])
+
+    return {
+      peopleScoreVo: unwrapResponse(scoreResponse),
+      peopleOverviewVo: unwrapResponse(overviewResponse),
+      peopleTimePeriodVo: unwrapResponse(timePeriodResponse),
+    }
   },
 
   async getTransit(payload) {
-    const response = await apiClient.post('/api/cluster/transit/get', payload)
-    return unwrapResponse(response)
+    const [scoreResponse, overviewResponse] = await Promise.all([
+      apiClient.post('/api/cluster/transit/score/get', payload),
+      apiClient.post('/api/cluster/transit/overview/get', payload),
+    ])
+
+    return {
+      transitScoreVo: unwrapResponse(scoreResponse),
+      transitOverviewVo: unwrapResponse(overviewResponse),
+    }
   },
 
   async submitAnalysis(payload) {

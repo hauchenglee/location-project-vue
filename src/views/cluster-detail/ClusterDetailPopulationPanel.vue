@@ -40,7 +40,9 @@ const selectedAgeGroupMap = {
   '65+': { label: '65 歲以上', keys: ['65+'] },
 }
 
-const population = computed(() => props.vo || null)
+const populationScoreVo = computed(() => props.vo?.populationScoreVo || {})
+const populationOverviewVo = computed(() => props.vo?.populationOverviewVo || {})
+const populationAgeVo = computed(() => props.vo?.populationAgeVo || {})
 
 const toNumber = (value) => {
   const number = Number(value)
@@ -86,23 +88,23 @@ const rankMetrics = computed(() => [
   {
     key: 'populationCountRank',
     label: '人口分數',
-    value: formatRank(population.value?.populationCountRank),
+    value: formatRank(populationScoreVo.value.populationCountRank),
   },
   {
     key: 'populationTargetAgeRank',
     label: '目標年齡層人口分數',
     note: `選擇：${selectedAgeGroupDetail.value.label}`,
-    value: formatRank(population.value?.populationTargetAgeRank),
+    value: formatRank(populationScoreVo.value.populationTargetAgeRank),
   },
 ])
 
 const structureStats = computed(() => {
-  const male = toNumber(population.value?.populationMale)
-  const female = toNumber(population.value?.populationFemale)
-  const total = toNumber(population.value?.populationTotal) || male + female
+  const male = toNumber(populationOverviewVo.value.populationMale)
+  const female = toNumber(populationOverviewVo.value.populationFemale)
+  const total = toNumber(populationOverviewVo.value.populationTotal) || male + female
 
   return [
-    { key: 'householdCount', label: '戶數', value: formatInteger(population.value?.householdCount) },
+    { key: 'householdCount', label: '戶數', value: formatInteger(populationOverviewVo.value.householdCount) },
     { key: 'populationTotal', label: '總人口', value: formatInteger(total) },
     { key: 'populationMale', label: '男性', value: formatInteger(male), percent: total ? formatPercent((male / total) * 100) : '-' },
     { key: 'populationFemale', label: '女性', value: formatInteger(female), percent: total ? formatPercent((female / total) * 100) : '-' },
@@ -111,8 +113,8 @@ const structureStats = computed(() => {
 
 const ageDistribution = computed(() => {
   const rows = ageGroups.map((group) => {
-    const male = toNumber(population.value?.[group.male])
-    const female = toNumber(population.value?.[group.female])
+    const male = toNumber(populationAgeVo.value[group.male])
+    const female = toNumber(populationAgeVo.value[group.female])
 
     return {
       ...group,
@@ -136,7 +138,7 @@ const selectedAgeGroupDetail = computed(() => {
     label: props.selectedAgeGroup || '未指定',
     keys: [],
   }
-  const total = toNumber(population.value?.populationTotal) || ageDistribution.value.reduce((sum, row) => sum + row.total, 0)
+  const total = toNumber(populationOverviewVo.value.populationTotal) || ageDistribution.value.reduce((sum, row) => sum + row.total, 0)
 
   if (props.selectedAgeGroup === 'ALL') {
     return {

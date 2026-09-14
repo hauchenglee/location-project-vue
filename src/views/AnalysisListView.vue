@@ -60,8 +60,18 @@ const formatDateTime = (value) => {
 }
 
 const formatLocation = (item) => {
+  const longitude = Number(item.longitude)
+  const latitude = Number(item.latitude)
+  if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+  }
+
   const district = [item.countyName, item.townName].filter(Boolean).join(' / ')
   return district || '-'
+}
+
+const formatRetainedAdminArea = (item) => {
+  return [item.countyName, item.townName].filter(Boolean).join(' / ')
 }
 
 const formatMeter = (value) => (value !== null && value !== undefined && value !== '' ? `${value} 公尺` : '-')
@@ -200,7 +210,7 @@ onMounted(() => {
                   </td>
                   <td>
                     {{ formatLocation(analysis) }}
-                    <span class="sub">行政區域</span>
+                    <span class="sub">{{ formatRetainedAdminArea(analysis) || '座標半徑' }}</span>
                   </td>
                   <td>
                     {{ formatMeter(analysis.radius) }}

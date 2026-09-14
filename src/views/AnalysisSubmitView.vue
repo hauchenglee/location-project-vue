@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
@@ -8,17 +8,9 @@ import { caseApi } from '@/services/caseApi'
 const isSubmitting = ref(false)
 const submitError = ref('')
 const submitResult = ref(null)
-const adminAreas = ref([])
-const isLoadingAdminAreas = ref(false)
-const adminAreaError = ref('')
 const businessIndustryCodes = ref([])
 const isLoadingBusinessIndustryCodes = ref(false)
 const businessIndustryCodeError = ref('')
-
-const analysisScopeOptions = [
-  { value: 'ADMIN', label: '行政區域' },
-  { value: 'POINT', label: '指定地點' },
-]
 
 const rangeSizeOptions = [
   { value: 250, label: '街道級', detail: '250m' },
@@ -27,7 +19,6 @@ const rangeSizeOptions = [
 ]
 
 const initialForm = {
-  analysisScope: 'ADMIN',
   productName: '',
   industryCode: '',
   countyName: '',
@@ -45,21 +36,34 @@ const initialForm = {
 const form = reactive({ ...initialForm })
 
 const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 100))
-const radius = computed(() => Math.max(Number.parseInt(form.radius, 10) || 500, 100))
-const isAdminScope = computed(() => form.analysisScope === 'ADMIN')
-const isPointScope = computed(() => form.analysisScope === 'POINT')
-const selectedAdminArea = computed(() => adminAreas.value.find((area) => area.countyName === form.countyName))
-const townOptions = computed(() => selectedAdminArea.value?.towns || [])
+const radius = computed(() => Number.parseInt(form.radius, 10))
 const flattenIndustryCodes = (industries) =>
   industries.flatMap((industry) => [industry, ...flattenIndustryCodes(industry.children || [])])
 const selectedIndustry = computed(() =>
   flattenIndustryCodes(businessIndustryCodes.value).find((industry) => industry.industryCode === form.industryCode),
 )
+const toFiniteNumber = (value) => {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+const longitude = computed(() => toFiniteNumber(form.longitude))
+const latitude = computed(() => toFiniteNumber(form.latitude))
+const hasValidLongitudeLatitude = computed(() =>
+  longitude.value !== null
+  && latitude.value !== null
+  && longitude.value >= -180
+  && longitude.value <= 180
+  && latitude.value >= -90
+  && latitude.value <= 90,
+)
+const hasValidRadius = computed(() =>
+  Number.isInteger(radius.value) && radius.value > 0 && radius.value % 100 === 0,
+)
 const canSubmit = computed(() => {
   if (!form.productName || !form.industryCode) return false
-  if (isAdminScope.value) return Boolean(form.countyName && form.townName)
 
-  return false
+  return hasValidLongitudeLatitude.value && hasValidRadius.value
 })
 
 const statusLabelMap = {
@@ -75,19 +79,6 @@ const resetForm = () => {
   Object.assign(form, initialForm)
   submitError.value = ''
   submitResult.value = null
-}
-
-const loadAdminAreas = async () => {
-  isLoadingAdminAreas.value = true
-  adminAreaError.value = ''
-
-  try {
-    adminAreas.value = await caseApi.listAdminAreas()
-  } catch (error) {
-    adminAreaError.value = error?.response?.data?.message || error.message || '取得行政區失敗'
-  } finally {
-    isLoadingAdminAreas.value = false
-  }
 }
 
 const loadBusinessIndustryCodes = async () => {
@@ -106,26 +97,7 @@ const loadBusinessIndustryCodes = async () => {
   }
 }
 
-watch(
-  () => form.countyName,
-  () => {
-    form.townName = ''
-  },
-)
-
-watch(
-  () => form.analysisScope,
-  (analysisScope) => {
-    if (analysisScope === 'ADMIN') {
-      form.longitude = ''
-      form.latitude = ''
-      form.radius = 500
-    }
-  },
-)
-
 onMounted(() => {
-  loadAdminAreas()
   loadBusinessIndustryCodes()
 })
 
@@ -134,11 +106,11 @@ const createPayload = () => {
     productName: form.productName,
     industryCode: form.industryCode,
     industryName: selectedIndustry.value?.name || null,
-    countyName: isAdminScope.value ? form.countyName || null : null,
-    townName: isAdminScope.value ? form.townName || null : null,
-    longitude: isPointScope.value && form.longitude !== '' ? Number(form.longitude) : null,
-    latitude: isPointScope.value && form.latitude !== '' ? Number(form.latitude) : null,
-    radius: isPointScope.value ? radius.value : null,
+    countyName: form.countyName || null,
+    townName: form.townName || null,
+    longitude: longitude.value,
+    latitude: latitude.value,
+    radius: radius.value,
     rangeSize: rangeSize.value,
     preference: form.preference,
     selectedDayType: form.selectedDayType,
@@ -149,9 +121,7 @@ const createPayload = () => {
 
 const submitAnalysis = async () => {
   if (!canSubmit.value) {
-    submitError.value = isPointScope.value
-      ? '指定地點分析尚未啟用，請先使用行政區域建立案件。'
-      : '請完成商品名稱、產業類別與行政區域設定。'
+    submitError.value = '請完成商品名稱、產業類別、有效經緯度與半徑設定。'
     return
   }
 
@@ -202,50 +172,7 @@ const submitAnalysis = async () => {
               <h3>分析範圍</h3>
             </div>
 
-            <div class="segmented-control" aria-label="分析範圍類型">
-              <button
-                v-for="option in analysisScopeOptions"
-                :key="option.value"
-                class="segmented-option"
-                :class="{ active: form.analysisScope === option.value }"
-                type="button"
-                @click="form.analysisScope = option.value"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-
-            <div v-if="isAdminScope" class="grid-2">
-              <div class="field">
-                <label for="countyName">縣市</label>
-                <select id="countyName" v-model="form.countyName" :disabled="isLoadingAdminAreas">
-                  <option value="">{{ isLoadingAdminAreas ? '載入縣市中' : '請選擇縣市' }}</option>
-                  <option
-                    v-for="area in adminAreas"
-                    :key="area.countyCode || area.countyId || area.countyName"
-                    :value="area.countyName"
-                  >
-                    {{ area.countyName }}
-                  </option>
-                </select>
-                <div v-if="adminAreaError" class="field-note error">{{ adminAreaError }}</div>
-              </div>
-              <div class="field">
-                <label for="townName">鄉鎮市區</label>
-                <select id="townName" v-model="form.townName" :disabled="!form.countyName || isLoadingAdminAreas">
-                  <option value="">請選擇鄉鎮市區</option>
-                  <option
-                    v-for="town in townOptions"
-                    :key="town.townCode || town.townId || town.townName"
-                    :value="town.townName"
-                  >
-                    {{ town.townName }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div v-else class="grid-2">
+            <div class="grid-2">
               <div class="field">
                 <label for="longitude">經度</label>
                 <input id="longitude" v-model="form.longitude" type="number" step="0.000001" placeholder="121.5654" />
@@ -256,12 +183,8 @@ const submitAnalysis = async () => {
               </div>
               <div class="field">
                 <label for="radius">分析半徑</label>
-                <select id="radius" v-model="form.radius">
-                  <option :value="250">250m</option>
-                  <option :value="500">500m</option>
-                  <option :value="1000">1000m</option>
-                </select>
-                <div class="field-note">指定地點分析需後端 point scope 啟用後才能提交。</div>
+                <input id="radius" v-model="form.radius" type="number" min="100" step="100" placeholder="500" />
+                <div class="field-note">半徑需為 100 公尺的倍數。</div>
               </div>
             </div>
 
@@ -351,9 +274,6 @@ const submitAnalysis = async () => {
     <aside class="right">
       <div class="map-wrap">
         <LocationMap
-          :analysis-scope="form.analysisScope"
-          :county-name="form.countyName"
-          :town-name="form.townName"
           :longitude="form.longitude"
           :latitude="form.latitude"
           :radius="radius"

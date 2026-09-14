@@ -78,6 +78,13 @@ const selectedCluster = computed(
 const mapReadyCount = computed(() => metricClusterRows.value.length)
 
 const formatLocation = (analysis) => {
+  const longitude = Number(analysis.longitude)
+  const latitude = Number(analysis.latitude)
+  if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+    const radius = analysis.radius ? ` / ${analysis.radius}m` : ''
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}${radius}`
+  }
+
   const district = [analysis.countyName, analysis.townName].filter(Boolean).join(' / ')
 
   return district || '-'

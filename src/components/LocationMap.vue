@@ -1,23 +1,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as maplibregl from 'maplibre-gl'
-import { TAIWAN_BOUNDS, TAIWAN_CENTER } from '@/maps/constants'
+import { TAIWAN_CENTER } from '@/maps/constants'
 import { useMapLibreMap } from '@/maps/composables/useMapLibreMap'
 import { loadBasemapStyle } from '@/maps/basemaps/basemapStyleLoader'
 
 const props = defineProps({
-  analysisScope: {
-    type: String,
-    default: 'ADMIN',
-  },
-  countyName: {
-    type: String,
-    default: '',
-  },
-  townName: {
-    type: String,
-    default: '',
-  },
   longitude: {
     type: [Number, String],
     default: '',
@@ -49,13 +37,9 @@ const selectedLocation = computed(() => {
   return [longitude, latitude]
 })
 
-const scopeTitle = computed(() => (props.analysisScope === 'POINT' ? '指定地點分析' : '行政區域分析'))
+const scopeTitle = computed(() => '座標半徑分析')
 const scopeSubtitle = computed(() => {
-  if (props.analysisScope === 'POINT') {
-    return selectedLocation.value ? `${props.radius}m 半徑` : '輸入座標後預覽範圍'
-  }
-
-  return [props.countyName, props.townName].filter(Boolean).join(' / ') || '選擇縣市與鄉鎮市區'
+  return selectedLocation.value ? `${props.radius}m 半徑` : '輸入座標後預覽範圍'
 })
 
 const createCircleFeature = (center, radiusMeters) => {
@@ -108,7 +92,7 @@ const renderPointPreview = () => {
 
   clearPointPreview()
 
-  if (props.analysisScope !== 'POINT' || !selectedLocation.value) {
+  if (!selectedLocation.value) {
     return
   }
 
@@ -147,16 +131,7 @@ const renderPointPreview = () => {
 const syncMapViewport = () => {
   if (!map.value) return
 
-  if (props.analysisScope === 'POINT') {
-    renderPointPreview()
-    return
-  }
-
-  clearPointPreview()
-  map.value.fitBounds(TAIWAN_BOUNDS, {
-    padding: 34,
-    animate: false,
-  })
+  renderPointPreview()
 }
 
 const initializeMap = async () => {
@@ -172,7 +147,7 @@ const initializeMap = async () => {
 }
 
 watch(
-  () => [props.analysisScope, props.countyName, props.townName, props.longitude, props.latitude, props.radius],
+  () => [props.longitude, props.latitude, props.radius],
   syncMapViewport,
 )
 

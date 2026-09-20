@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as maplibregl from 'maplibre-gl'
 import { TAIWAN_CENTER } from '@/maps/constants'
 import { useMapLibreMap } from '@/maps/composables/useMapLibreMap'
-import { loadBasemapStyle } from '@/maps/basemaps/basemapStyleLoader'
+import { createSubmitPreviewStyle } from '@/maps/styles'
 
 const props = defineProps({
   longitude: {
@@ -15,10 +15,6 @@ const props = defineProps({
     default: '',
   },
   radius: {
-    type: [Number, String],
-    default: 500,
-  },
-  rangeSize: {
     type: [Number, String],
     default: 500,
   },
@@ -137,7 +133,7 @@ const syncMapViewport = () => {
 const initializeMap = async () => {
   const mapInstance = await initializeMapLibre({
     container: mapEl,
-    style: await loadBasemapStyle(),
+    style: await createSubmitPreviewStyle(),
     center: TAIWAN_CENTER,
     zoom: 8,
   })

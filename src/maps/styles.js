@@ -38,6 +38,14 @@ export const createClusterLocatorStyle = ({ analysisId, metricClusters, selected
     ],
   })
 
+export const createSubmitPreviewStyle = () =>
+  composeMapStyle({
+    source: mvtSource(),
+    layers: [
+      ...adminBoundaryLayers(),
+    ],
+  })
+
 export const createClusterHeatmapStyle = ({ analysisId, metricClusterId }) =>
   composeMapStyle({
     source: mvtSource({ analysisId, metricClusterId }),

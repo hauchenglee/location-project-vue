@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
+import { TAIWAN_CENTER } from '@/maps/constants'
 import { caseApi } from '@/services/caseApi'
 
 const isSubmitting = ref(false)
@@ -12,7 +13,7 @@ const businessIndustryCodes = ref([])
 const isLoadingBusinessIndustryCodes = ref(false)
 const businessIndustryCodeError = ref('')
 
-const rangeSizeOptions = [
+const radiusOptions = [
   { value: 250, label: '街道級', detail: '250m' },
   { value: 500, label: '步行級', detail: '500m' },
   { value: 1000, label: '生活圈', detail: '1000m' },
@@ -23,10 +24,9 @@ const initialForm = {
   industryCode: '',
   countyName: '',
   townName: '',
-  longitude: '',
-  latitude: '',
+  longitude: TAIWAN_CENTER[0],
+  latitude: TAIWAN_CENTER[1],
   radius: 500,
-  rangeSize: 500,
   preference: '0.5',
   selectedDayType: 'ALL',
   selectedTimeSlot: 'ALL',
@@ -35,7 +35,6 @@ const initialForm = {
 
 const form = reactive({ ...initialForm })
 
-const rangeSize = computed(() => Math.max(Number.parseInt(form.rangeSize, 10) || 500, 100))
 const radius = computed(() => Number.parseInt(form.radius, 10))
 const flattenIndustryCodes = (industries) =>
   industries.flatMap((industry) => [industry, ...flattenIndustryCodes(industry.children || [])])
@@ -111,7 +110,6 @@ const createPayload = () => {
     longitude: longitude.value,
     latitude: latitude.value,
     radius: radius.value,
-    rangeSize: rangeSize.value,
     preference: form.preference,
     selectedDayType: form.selectedDayType,
     selectedTimeSlot: form.selectedTimeSlot,
@@ -181,23 +179,18 @@ const submitAnalysis = async () => {
                 <label for="latitude">緯度</label>
                 <input id="latitude" v-model="form.latitude" type="number" step="0.000001" placeholder="25.0330" />
               </div>
-              <div class="field">
-                <label for="radius">分析半徑</label>
-                <input id="radius" v-model="form.radius" type="number" min="100" step="100" placeholder="500" />
-                <div class="field-note">半徑需為 100 公尺的倍數。</div>
-              </div>
             </div>
 
             <div class="field">
-              <label>商圈尺度</label>
+              <label>分析半徑</label>
               <div class="range-choice-grid">
                 <button
-                  v-for="option in rangeSizeOptions"
+                  v-for="option in radiusOptions"
                   :key="option.value"
                   class="range-choice"
-                  :class="{ active: Number(form.rangeSize) === option.value }"
+                  :class="{ active: Number(form.radius) === option.value }"
                   type="button"
-                  @click="form.rangeSize = option.value"
+                  @click="form.radius = option.value"
                 >
                   <strong>{{ option.label }}</strong>
                   <span>{{ option.detail }}</span>
@@ -277,7 +270,6 @@ const submitAnalysis = async () => {
           :longitude="form.longitude"
           :latitude="form.latitude"
           :radius="radius"
-          :range-size="rangeSize"
         />
       </div>
     </aside>

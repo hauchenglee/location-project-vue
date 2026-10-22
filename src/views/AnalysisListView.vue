@@ -203,7 +203,7 @@ onMounted(() => {
         <div class="filter-grid">
           <div class="field">
             <label for="analysisNo">分析編號</label>
-            <input id="analysisNo" v-model="filters.analysisNo" type="text" placeholder="LZ-20260812-0001" />
+            <input id="analysisNo" v-model="filters.analysisNo" type="text" placeholder="AN-20260812-0001" />
           </div>
           <div class="field">
             <label for="productNameFilter">品牌 / 店型</label>

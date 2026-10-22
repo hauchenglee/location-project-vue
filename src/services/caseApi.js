@@ -97,6 +97,11 @@ export const caseApi = {
     return unwrapResponse(response)
   },
 
+  async identifyAdminArea(payload) {
+    const response = await apiClient.post('/api/reference/admin-area/identify', payload)
+    return unwrapResponse(response)
+  },
+
   async listAdminAreas() {
     const response = await apiClient.post('/api/reference/admin-county/list')
     return unwrapResponse(response) || []

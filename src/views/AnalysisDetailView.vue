@@ -87,13 +87,14 @@ const legendItems = computed(() =>
 )
 
 const formatLocation = (analysis) => {
+  const adminArea = [analysis.countyName, analysis.townName].filter(Boolean).join(' · ')
   const longitude = Number(analysis.longitude)
   const latitude = Number(analysis.latitude)
-  if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
-    return `${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`
-  }
+  const coordinates = Number.isFinite(longitude) && Number.isFinite(latitude)
+    ? `${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`
+    : ''
 
-  return [analysis.countyName, analysis.townName].filter(Boolean).join(' / ') || '座標未設定'
+  return [adminArea, coordinates].filter(Boolean).join(' · ') || '座標未設定'
 }
 
 const formatMeter = (value) => {

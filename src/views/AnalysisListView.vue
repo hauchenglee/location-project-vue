@@ -306,7 +306,7 @@ onMounted(() => {
                   <span class="empty-mark"><BrandMark :size="30" /></span>
                   <h3>{{ sortedAnalyses.length ? '這組條件下沒有分析' : '還沒有分析紀錄' }}</h3>
                   <p>
-                    {{ sortedAnalyses.length ? '換個關鍵字，或清除條件再看一次。' : '從一個座標開始，建立第一筆分析。' }}
+                    {{ sortedAnalyses.length ? '換個關鍵字，或清除條件再看一次。' : '從一個地點開始，建立第一筆分析。' }}
                   </p>
                   <button v-if="!sortedAnalyses.length" class="btn-sm btn-sm--primary" type="button" @click="emit('create')">
                     開始分析
@@ -354,7 +354,7 @@ onMounted(() => {
       <div v-if="!pagedAnalyses.length" class="record-cards-empty">
         <span class="empty-mark"><BrandMark :size="30" /></span>
         <h3>{{ sortedAnalyses.length ? '這組條件下沒有分析' : '還沒有分析紀錄' }}</h3>
-        <p>{{ sortedAnalyses.length ? '換個關鍵字，或清除條件再看一次。' : '從一個座標開始，建立第一筆分析。' }}</p>
+        <p>{{ sortedAnalyses.length ? '換個關鍵字，或清除條件再看一次。' : '從一個地點開始，建立第一筆分析。' }}</p>
         <button v-if="!sortedAnalyses.length" class="btn-sm btn-sm--primary" type="button" @click="emit('create')">
           開始分析
         </button>

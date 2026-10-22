@@ -1,10 +1,16 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import AdminDistrictLocator from '@/components/AdminDistrictLocator.vue'
 import IndustryCodeSelect from '@/components/IndustryCodeSelect.vue'
 import LocationMap from '@/components/LocationMap.vue'
 import PageLoading from '@/components/PageLoading.vue'
 import { TAIWAN_CENTER } from '@/maps/constants'
 import { caseApi } from '@/services/caseApi'
+import {
+  findAdminDistrictByCode,
+  flattenAdminDistricts,
+  formatAdminDistrict,
+} from '@/utils/adminAreas'
 
 const emit = defineEmits(['view-detail', 'view-records'])
 
@@ -20,8 +26,25 @@ const timePeriods = ref([])
 const isLoadingTimePeriods = ref(false)
 const timePeriodError = ref('')
 
+const adminCounties = ref([])
+const isLoadingAdminAreas = ref(false)
+const adminAreaError = ref('')
+const selectedDistrictCode = ref('')
+const locationSource = ref('default')
+const isIdentifying = ref(false)
+const identifyError = ref('')
+const manualInputsOpen = ref(false)
+const locationMapRef = ref(null)
+
+let identifySeq = 0
+let manualIdentifyTimer = null
+let manualSessionDistrict = null
+
+const DISTRICT_FOCUS_ZOOM = 14.1
+const DEFAULT_MAP_ZOOM = 13.2
+
 const radiusOptions = [
-  { value: 250, label: '街道級', detail: '250m', note: '轉角與街廓' },
+  { value: 200, label: '街道級', detail: '200m', note: '轉角與街廓' },
   { value: 500, label: '步行級', detail: '500m', note: '五到八分鐘' },
   { value: 1000, label: '生活圈', detail: '1km', note: '完整生活半徑' },
 ]
@@ -46,9 +69,9 @@ const ageGroupOptions = [
 ]
 
 const quickSpots = [
-  { label: '台北・信義', note: '市府商圈', longitude: 121.5654, latitude: 25.0330 },
-  { label: '台北・中山', note: '南西商圈', longitude: 121.5267, latitude: 25.0528 },
-  { label: '新北・板橋', note: '板橋車站', longitude: 121.4628, latitude: 25.0115 },
+  { label: '台北・信義', note: '市府商圈', longitude: 121.5654, latitude: 25.0330, townCode: '63000020' },
+  { label: '台北・中山', note: '南西商圈', longitude: 121.5267, latitude: 25.0528, townCode: '63000040' },
+  { label: '新北・板橋', note: '板橋車站', longitude: 121.4628, latitude: 25.0115, townCode: '65000010' },
 ]
 
 const initialForm = {
@@ -114,8 +137,31 @@ const hasValidRadius = computed(() =>
   Number.isInteger(radius.value) && radius.value > 0 && radius.value % 100 === 0,
 )
 
+const adminDistricts = computed(() => flattenAdminDistricts(adminCounties.value))
+const selectedDistrict = computed(() =>
+  findAdminDistrictByCode(adminDistricts.value, selectedDistrictCode.value),
+)
+const districtLabel = computed(() => formatAdminDistrict(selectedDistrict.value))
+
+const coordinateText = computed(() => {
+  if (!hasValidLongitudeLatitude.value) return '尚未設定'
+  return `${latitude.value.toFixed(4)}°N / ${longitude.value.toFixed(4)}°E`
+})
+
+const coordinateTag = computed(() => {
+  if (locationSource.value === 'district') return '行政區代表點'
+  if (locationSource.value === 'quick') return '快速地點'
+  if (locationSource.value === 'map') return '地圖選點'
+  if (locationSource.value === 'manual') return '手動輸入'
+  return '預設地點'
+})
+
+const coordinateNote = '實際送出的位置。拖拽地圖標記或在右側地圖點選即可微調。'
+
 const canSubmit = computed(() => {
   if (!form.productName.trim() || !form.industryCode) return false
+  if (isIdentifying.value) return false
+  if (!selectedDistrict.value) return false
   return hasValidLongitudeLatitude.value && hasValidRadius.value
 })
 
@@ -128,7 +174,8 @@ const summaryMeta = computed(() => {
   const coordinate = hasValidLongitudeLatitude.value
     ? `${longitude.value.toFixed(4)}, ${latitude.value.toFixed(4)}`
     : '尚未設定座標'
-  return `${coordinate} · ${selectedTimePeriodLabel.value} · ${ageGroupLabel.value}`
+  const district = districtLabel.value || '未對應行政區'
+  return `${district} · ${coordinate} · ${selectedTimePeriodLabel.value} · ${ageGroupLabel.value}`
 })
 
 const statusLabelMap = {
@@ -140,14 +187,107 @@ const statusLabelMap = {
   INACTIVE: '無效',
 }
 
-const applyPickedLocation = ({ longitude: nextLongitude, latitude: nextLatitude }) => {
-  form.longitude = nextLongitude
-  form.latitude = nextLatitude
+const identifyAdminArea = async (lng, lat) =>
+  caseApi.identifyAdminArea({ longitude: lng, latitude: lat })
+
+const syncDistrictFromPoint = async (
+  lng,
+  lat,
+  { resetZoom = false, previousCode = selectedDistrictCode.value, focusIfSame = false } = {},
+) => {
+  const requestId = ++identifySeq
+  isIdentifying.value = true
+  identifyError.value = ''
+
+  try {
+    const data = await identifyAdminArea(lng, lat)
+    if (requestId !== identifySeq) return
+
+    const nextDistrict = data ? findAdminDistrictByCode(adminDistricts.value, data.townCode) : null
+    const nextCode = nextDistrict ? String(nextDistrict.townCode) : ''
+    selectedDistrictCode.value = nextCode
+
+    if (nextDistrict) {
+      const changed = nextCode !== String(previousCode || '')
+      if (changed && resetZoom) {
+        locationMapRef.value?.focusOn(Number(lng), Number(lat), DISTRICT_FOCUS_ZOOM)
+      } else if (!changed && focusIfSame) {
+        locationMapRef.value?.focusOn(Number(lng), Number(lat))
+      }
+    }
+  } catch (error) {
+    if (requestId !== identifySeq) return
+    selectedDistrictCode.value = ''
+    identifyError.value =
+      error?.response?.data?.message || '行政區查詢失敗，請再點一次地圖或稍後重試。'
+  } finally {
+    if (requestId === identifySeq) isIdentifying.value = false
+  }
+}
+
+const handleDistrictSelect = (district) => {
+  if (!district) return
+
+  const nextCode = String(district.townCode)
+  if (nextCode === String(selectedDistrictCode.value)) return
+
+  selectedDistrictCode.value = nextCode
+  locationSource.value = 'district'
+  identifyError.value = ''
+
+  const nextLongitude = Number(district.longitude)
+  const nextLatitude = Number(district.latitude)
+  if (!Number.isFinite(nextLongitude) || !Number.isFinite(nextLatitude)) return
+
+  form.longitude = Number(nextLongitude.toFixed(6))
+  form.latitude = Number(nextLatitude.toFixed(6))
+  locationMapRef.value?.focusOn(form.longitude, form.latitude, DISTRICT_FOCUS_ZOOM)
+}
+
+const handleMapPick = ({ longitude: nextLongitude, latitude: nextLatitude }) => {
+  const lng = Number(nextLongitude)
+  const lat = Number(nextLatitude)
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return
+
+  form.longitude = Number(lng.toFixed(6))
+  form.latitude = Number(lat.toFixed(6))
+  locationSource.value = 'map'
+
+  const previousCode = selectedDistrictCode.value
+  syncDistrictFromPoint(form.longitude, form.latitude, {
+    resetZoom: true,
+    previousCode,
+  })
+}
+
+const handleManualInput = () => {
+  locationSource.value = 'manual'
+  if (manualSessionDistrict === null) {
+    manualSessionDistrict = selectedDistrictCode.value
+  }
+  selectedDistrictCode.value = ''
+  identifyError.value = ''
+
+  if (manualIdentifyTimer) window.clearTimeout(manualIdentifyTimer)
+  manualIdentifyTimer = window.setTimeout(async () => {
+    if (!hasValidLongitudeLatitude.value) return
+    const previousCode = manualSessionDistrict
+    await syncDistrictFromPoint(longitude.value, latitude.value, {
+      resetZoom: true,
+      previousCode,
+      focusIfSame: true,
+    })
+    manualSessionDistrict = null
+  }, 650)
 }
 
 const applyQuickSpot = (spot) => {
-  form.longitude = spot.longitude
-  form.latitude = spot.latitude
+  form.longitude = Number(Number(spot.longitude).toFixed(6))
+  form.latitude = Number(Number(spot.latitude).toFixed(6))
+  selectedDistrictCode.value = String(spot.townCode)
+  locationSource.value = 'quick'
+  identifyError.value = ''
+  locationMapRef.value?.focusOn(form.longitude, form.latitude, DISTRICT_FOCUS_ZOOM)
 }
 
 const toggleTimePeriod = (periodId) => {
@@ -176,6 +316,21 @@ const resetForm = () => {
   })
   submitError.value = ''
   submitResult.value = null
+  selectedDistrictCode.value = ''
+  locationSource.value = 'default'
+  identifyError.value = ''
+  manualSessionDistrict = null
+  if (manualIdentifyTimer) window.clearTimeout(manualIdentifyTimer)
+  identifySeq += 1
+  isIdentifying.value = false
+  locationMapRef.value?.focusOn(initialForm.longitude, initialForm.latitude, DEFAULT_MAP_ZOOM)
+
+  window.setTimeout(() => {
+    syncDistrictFromPoint(initialForm.longitude, initialForm.latitude, {
+      resetZoom: false,
+      previousCode: '',
+    })
+  }, 100)
 }
 
 const loadBusinessIndustryCodes = async () => {
@@ -209,9 +364,40 @@ const loadTimePeriods = async () => {
   }
 }
 
-onMounted(() => {
+const loadAdminAreas = async () => {
+  isLoadingAdminAreas.value = true
+  adminAreaError.value = ''
+
+  try {
+    const data = await caseApi.listAdminAreas()
+    adminCounties.value = Array.isArray(data) ? data : []
+    if (!adminCounties.value.length) {
+      adminAreaError.value = '目前沒有可用的行政區資料，暫時無法選擇地點。'
+    }
+  } catch (error) {
+    adminAreaError.value =
+      error?.response?.data?.message || error.message || '取得行政區失敗，暫時無法選擇地點。'
+    adminCounties.value = []
+  } finally {
+    isLoadingAdminAreas.value = false
+  }
+}
+
+onMounted(async () => {
   loadBusinessIndustryCodes()
   loadTimePeriods()
+  await loadAdminAreas()
+
+  if (adminDistricts.value.length) {
+    syncDistrictFromPoint(initialForm.longitude, initialForm.latitude, {
+      resetZoom: false,
+      previousCode: '',
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  if (manualIdentifyTimer) window.clearTimeout(manualIdentifyTimer)
 })
 
 const createPayload = () => ({
@@ -230,7 +416,9 @@ const createPayload = () => ({
 
 const submitAnalysis = async () => {
   if (!canSubmit.value) {
-    submitError.value = '請完成品牌名稱、產業類別、有效經緯度與分析範圍。'
+    submitError.value = isIdentifying.value
+      ? '正在確認中心點所屬行政區，請稍候。'
+      : '請完成品牌名稱、產業類別、有效座標與分析範圍，並確認中心點位於台北市或新北市。'
     return
   }
 
@@ -255,7 +443,7 @@ const submitAnalysis = async () => {
         <header class="create-intro">
           <p class="eyebrow">NEW ANALYSIS / 新分析</p>
           <h1>先設定地點，<br>再開始分析。</h1>
-          <p>選一個品牌或店型，放上座標與範圍。商業、人口、人潮與交通會在同一個畫面裡展開。</p>
+          <p>選一個品牌或店型，拖拽中心點、設定範圍。商業、人口、人潮與交通會在同一個畫面裡展開。</p>
         </header>
 
         <form @submit.prevent="submitAnalysis">
@@ -299,34 +487,68 @@ const submitAnalysis = async () => {
               <span class="step-no">02</span>
               <div>
                 <h2>地點</h2>
-                <p>想分析哪裡？可以直接點地圖，或輸入座標。</p>
+                <p>想分析哪裡？選行政區，或直接拖拽右側地圖。</p>
               </div>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label for="longitude">經度 Lng</label>
-                <input
-                  id="longitude"
-                  v-model="form.longitude"
-                  type="number"
-                  step="0.000001"
-                  placeholder="121.5654"
-                />
+            <AdminDistrictLocator
+              :counties="adminCounties"
+              :model-value="selectedDistrictCode"
+              :loading="isLoadingAdminAreas"
+              :error="adminAreaError || identifyError"
+              @select="handleDistrictSelect"
+            />
+
+            <div class="coordinate-readout">
+              <div class="coordinate-head">
+                <span class="field-label">中心點 <em>ANALYSIS POINT</em></span>
+                <span
+                  class="coordinate-tag"
+                  :class="{ 'is-district': locationSource === 'district' }"
+                >{{ coordinateTag }}</span>
               </div>
-              <div class="field">
-                <label for="latitude">緯度 Lat</label>
-                <input
-                  id="latitude"
-                  v-model="form.latitude"
-                  type="number"
-                  step="0.000001"
-                  placeholder="25.0330"
-                />
+              <strong class="coordinate-value">{{ coordinateText }}</strong>
+              <p class="coordinate-note">{{ coordinateNote }}</p>
+              <div v-if="isIdentifying" class="field-note">正在確認行政區…</div>
+
+              <button
+                class="coordinate-manual-toggle"
+                type="button"
+                @click="manualInputsOpen = !manualInputsOpen"
+              >
+                {{ manualInputsOpen ? '收起手動輸入' : '無法使用地圖？手動輸入座標' }}
+              </button>
+
+              <div v-if="manualInputsOpen" class="coordinate-manual">
+                <div class="field-row">
+                  <div class="field">
+                    <label for="longitude">經度 Lng</label>
+                    <input
+                      id="longitude"
+                      v-model="form.longitude"
+                      type="number"
+                      step="0.000001"
+                      placeholder="121.5654"
+                      @input="handleManualInput"
+                    />
+                  </div>
+                  <div class="field">
+                    <label for="latitude">緯度 Lat</label>
+                    <input
+                      id="latitude"
+                      v-model="form.latitude"
+                      type="number"
+                      step="0.000001"
+                      placeholder="25.0330"
+                      @input="handleManualInput"
+                    />
+                  </div>
+                </div>
+                <div class="field-note">僅在地圖無法操作時使用；分析仍以此座標為準。</div>
               </div>
             </div>
 
-            <div class="field">
+            <div class="field quick-spots-field">
               <span class="field-label">快速地點</span>
               <div class="quick-spots">
                 <button
@@ -474,11 +696,15 @@ const submitAnalysis = async () => {
 
     <aside class="map-pane">
       <LocationMap
+        ref="locationMapRef"
         :longitude="form.longitude"
         :latitude="form.latitude"
         :radius="radius"
-        @pick-location="applyPickedLocation"
+        :district-code="selectedDistrictCode"
+        :district-name="districtLabel"
+        @pick-location="handleMapPick"
         @update:radius="form.radius = $event"
+        @map-unavailable="manualInputsOpen = true"
       />
     </aside>
 
@@ -530,5 +756,113 @@ const submitAnalysis = async () => {
 
 .submit-success .btn-row {
   margin-top: 2px;
+}
+
+.coordinate-readout {
+  margin-top: 18px;
+  padding-top: 2px;
+}
+
+.coordinate-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.coordinate-head .field-label {
+  margin: 0;
+}
+
+.coordinate-head .field-label em {
+  margin-left: 7px;
+  color: var(--muted-2);
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.coordinate-value {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.coordinate-note {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.coordinate-tag {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.coordinate-tag.is-district {
+  border-color: rgba(138, 106, 58, 0.28);
+  background: rgba(138, 106, 58, 0.08);
+  color: var(--gold);
+}
+
+.coordinate-manual-toggle {
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.coordinate-manual-toggle:hover {
+  color: var(--ink);
+}
+
+.coordinate-manual {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: rgba(239, 232, 216, 0.4);
+}
+
+.coordinate-manual .field-row {
+  gap: 8px;
+}
+
+.coordinate-manual .field input {
+  min-height: 38px;
+  font-size: 12px;
+}
+
+.coordinate-manual .field-note {
+  margin-top: 7px;
+}
+
+.quick-spots-field {
+  margin-top: 16px;
+}
+
+.quick-spots-field .field-label {
+  display: block;
+  margin-bottom: 1px;
 }
 </style>

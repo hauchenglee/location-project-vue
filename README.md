@@ -1,38 +1,44 @@
-# location-project-vue
+# 落子 luozi · 前端
 
-This template should help get you started developing with Vue 3 in Vite.
+> 先看清，再決定。
 
-## Recommended IDE Setup
+落子（luozi）是一個區位分析平台。輸入一個座標，把商業、人口、人潮、交通與空間熱區放在同一個畫面上，整理出可比較的候選生活圈。
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## 開發
 
 ```sh
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+預設由 Vite 代理 `/api` 到 `http://localhost:8080`。如需指向其他後端：
+
+```sh
+VITE_PROXY_TARGET=http://localhost:8081 npm run dev
+```
+
+## 建置
 
 ```sh
 npm run build
 ```
+
+## 頁面
+
+| Route | 名稱 | 說明 |
+| --- | --- | --- |
+| `#/product` | 產品 | 定位、問題、功能、適用場景與使用流程（預設頁） |
+| `#/create` | 新分析 | 設定品牌、產業、地點、範圍與分析條件 |
+| `#/records` | 分析紀錄 | 歷史分析列表與篩選 |
+| `#/detail?id=` | 分析 | 一份分析的綜合評分、候選生活圈與地圖 |
+| `#/cluster-detail?analysisId=&clusterId=` | 生活圈 | 單一生活圈的商業、人口、人潮、交通與熱區 |
+
+## 品牌
+
+- 墨 `#14150F`、紙 `#F6F1E6`、硃砂 `#C3472C`、青玉 `#3F6B58`
+- 淺色底、墨色文字、硃砂重點；不使用大面積黑色底
+- 標題、內文與一般標籤統一使用系統無襯線字體，與 dingweb 的字體堆疊一致
+- 座標、表格欄位與圖表軸標籤保留等寬字，維持數字對齊與資料感
+- 外層卡片、篩選器與按鈕使用 8–18px 圓角；密集指標卡維持 4px 小圓角
+- 產品名稱「落子」保留，介面語彙以功能為主：分析、分析紀錄、生活圈、綜合評分、分析範圍
+- 視覺以地圖、產品預覽、格線與資料標記構成，不使用圍棋棋盤或棋子作為主要影像

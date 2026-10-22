@@ -18,29 +18,48 @@ export const useMapLibreMap = () => {
   const map = shallowRef(null)
   let resizeObserver = null
 
-  const initializeMap = async ({ container, style, center = TAIWAN_CENTER, zoom = 8 }) => {
+  const supportsWebGL2 = () => {
+    try {
+      const canvas = document.createElement('canvas')
+      return Boolean(canvas.getContext('webgl2'))
+    } catch (error) {
+      return false
+    }
+  }
+
+  const initializeMap = async ({ container, style, center = TAIWAN_CENTER, zoom = 8, navigationPosition = 'top-right' }) => {
     await nextTick()
-    if (map.value || !container.value) return null
+    if (map.value || !container.value || !supportsWebGL2()) return null
 
-    map.value = new maplibregl.Map({
-      container: container.value,
-      style,
-      center,
-      zoom,
-      minZoom: 6,
-      maxZoom: 22,
-      attributionControl: false,
-    })
+    try {
+      map.value = new maplibregl.Map({
+        container: container.value,
+        style,
+        center,
+        zoom,
+        minZoom: 6,
+        maxZoom: 22,
+        attributionControl: false,
+      })
 
-    map.value.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
-    map.value.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+      map.value.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), navigationPosition)
+      map.value.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
 
-    resizeObserver = new ResizeObserver(() => {
-      map.value?.resize()
-    })
-    resizeObserver.observe(container.value)
+      resizeObserver = new ResizeObserver(() => {
+        try {
+          map.value?.resize()
+        } catch (error) {
+          // The map may be between style swaps; a later resize will settle it.
+        }
+      })
+      resizeObserver.observe(container.value)
 
-    return map.value
+      return map.value
+    } catch (error) {
+      console.warn('[map] MapLibre could not initialize.', error)
+      map.value = null
+      return null
+    }
   }
 
   const resizeAfterLayout = async () => {
@@ -64,7 +83,11 @@ export const useMapLibreMap = () => {
   const destroyMap = () => {
     resizeObserver?.disconnect()
     resizeObserver = null
-    map.value?.remove()
+    try {
+      map.value?.remove()
+    } catch (error) {
+      // A failed map can throw while tearing down; nothing else to release.
+    }
     map.value = null
   }
 

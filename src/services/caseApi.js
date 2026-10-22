@@ -106,4 +106,9 @@ export const caseApi = {
     const response = await apiClient.post('/api/reference/business-industry-code/list')
     return unwrapResponse(response) || []
   },
+
+  async listTimePeriods() {
+    const response = await apiClient.post('/api/reference/time-period/list')
+    return unwrapResponse(response) || []
+  },
 }

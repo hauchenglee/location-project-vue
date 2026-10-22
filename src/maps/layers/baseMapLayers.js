@@ -4,7 +4,7 @@ export const backgroundLayer = () => ({
   id: 'background',
   type: 'background',
   paint: {
-    'background-color': '#eef3f8',
+    'background-color': '#efe8d6',
   },
 })
 
@@ -16,7 +16,7 @@ export const adminBoundaryLayers = () => [
     'source-layer': MVT_LAYERS.adminCounty.sourceLayer,
     ...styleLayerZoom(MVT_LAYERS.adminCounty),
     paint: {
-      'line-color': '#9aa8b8',
+      'line-color': '#8a8776',
       'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.6, 11, 1.2],
     },
   },
@@ -27,7 +27,7 @@ export const adminBoundaryLayers = () => [
     'source-layer': MVT_LAYERS.adminTown.sourceLayer,
     ...styleLayerZoom(MVT_LAYERS.adminTown),
     paint: {
-      'line-color': '#c0cad6',
+      'line-color': '#b4ae9a',
       'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.3, 13, 0.9],
     },
   },

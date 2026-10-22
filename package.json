@@ -1,5 +1,5 @@
 {
-  "name": "location-project-vue",
+  "name": "luozi-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -20,5 +20,6 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
-  }
+  },
+  "description": "落子 luozi — 區位分析平台前端：商業、人口、人潮、交通與空間熱區，整理出可比較的候選生活圈。"
 }

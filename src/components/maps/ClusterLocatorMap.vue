@@ -7,6 +7,7 @@ import { clusterFootprintLayers } from '@/maps/layers/clusterFootprintLayers'
 import { sameClusterId } from '@/maps/models/metricCluster'
 import { createClusterLocatorStyle } from '@/maps/styles'
 import { getClusterBounds, getClusterCenter, getClustersBounds } from '@/maps/utils/bounds'
+import MapFallback from '@/components/MapFallback.vue'
 
 const props = defineProps({
   analysisId: {
@@ -26,6 +27,7 @@ const props = defineProps({
 const emit = defineEmits(['select-cluster'])
 
 const mapEl = ref(null)
+const mapUnavailable = ref(false)
 const hoveredMetricClusterId = ref(null)
 const CLUSTER_SEARCH_ZOOM = 11
 const { map, initializeMap: initializeMapLibre, resizeAfterLayout, setStyle } = useMapLibreMap()
@@ -171,7 +173,10 @@ const initializeMap = async () => {
     container: mapEl,
     style: await createLocatorStyle(),
   })
-  if (!mapInstance) return
+  if (!mapInstance) {
+    mapUnavailable.value = true
+    return
+  }
 
   mapInstance.on('load', async () => {
     await resizeAfterLayout()
@@ -231,5 +236,19 @@ defineExpose({
 </script>
 
 <template>
-  <div ref="mapEl" class="analysis-cluster-map maplibre-stage" aria-label="生活圈位置地圖"></div>
+  <div class="map-host">
+    <div ref="mapEl" class="map-canvas maplibre-stage" aria-label="生活圈位置地圖"></div>
+    <MapFallback
+      v-if="mapUnavailable"
+      title="生活圈暫時無法描繪"
+      description="此環境未啟用 WebGL2。你仍然可以從左側列表閱讀每一個生活圈的綜合評分，並進入單一生活圈看完整資料。"
+    />
+  </div>
 </template>
+
+<style scoped>
+.map-host {
+  position: absolute;
+  inset: 0;
+}
+</style>

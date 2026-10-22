@@ -21,7 +21,7 @@ export const MAPTILER_BASEMAPS = Object.freeze({
   }),
 })
 
-export const DEFAULT_MAPTILER_BASEMAP_ID = MAPTILER_BASEMAPS.brightPastel.id
+export const DEFAULT_MAPTILER_BASEMAP_ID = MAPTILER_BASEMAPS.datavizLight.id
 
 export const getMapTilerApiKey = () => import.meta.env.VITE_MAPTILER_API_KEY || ''
 

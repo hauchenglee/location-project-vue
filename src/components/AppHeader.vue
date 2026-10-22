@@ -1,35 +1,35 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import BrandMark from '@/components/BrandMark.vue'
+
+const props = defineProps({
   activePage: {
     type: String,
-    required: true,
+    default: 'create',
   },
 })
 
 const emit = defineEmits(['navigate'])
 
+const isCreatePage = computed(() => props.activePage === 'create')
+
 const tabs = [
-  { key: 'create', label: '建立案件' },
-  { key: 'records', label: '分析列表' },
+  { key: 'create', no: '01', label: '新分析' },
+  { key: 'records', no: '02', label: '分析紀錄' },
 ]
 </script>
 
 <template>
   <header class="header">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" role="img">
-          <path d="M16 3 28 9.8v12.4L16 29 4 22.2V9.8L16 3Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" />
-          <path d="M5.5 10.5 16 16l10.5-5.5M5.5 21.5 16 16l10.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" />
-        </svg>
-      </div>
-      <div class="brand-text">
-        <h1>區位分析案件系統</h1>
-        <p>Location Analysis</p>
-      </div>
-    </div>
+    <button class="brand" type="button" aria-label="回到落子產品頁" @click="emit('navigate', 'product')">
+      <BrandMark :size="34" />
+      <span class="brand-text">
+        <span class="brand-name">落子<small>luozi</small></span>
+        <span class="brand-sub">Decision Platform</span>
+      </span>
+    </button>
 
-    <nav class="tabs">
+    <nav class="tabs" aria-label="主要導覽">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -38,30 +38,18 @@ const tabs = [
         type="button"
         @click="emit('navigate', tab.key)"
       >
+        <span class="tab-no">{{ tab.no }}</span>
         {{ tab.label }}
       </button>
     </nav>
 
     <div class="header-actions">
-      <button class="icon-btn" type="button" aria-label="訊息">
-        <span class="icon icon-chat"></span>
+      <button class="header-link" type="button" @click="emit('navigate', 'product')">
+        產品介紹
       </button>
-
-      <button class="icon-btn" type="button" aria-label="行事曆">
-        <span class="icon icon-calendar"></span>
-      </button>
-
-      <button class="icon-btn" type="button" aria-label="通知">
-        <span class="icon icon-bell"></span>
-      </button>
-
-      <button class="user-btn" type="button" aria-label="使用者帳號">
-        <span class="avatar">管</span>
-        <span class="user-meta">
-          <strong>系統管理員</strong>
-          <span>Admin</span>
-        </span>
-        <span class="chev"></span>
+      <button class="header-cta" type="button" @click="emit('navigate', isCreatePage ? 'records' : 'create')">
+        <span class="header-cta-dot" aria-hidden="true"></span>
+        {{ isCreatePage ? '看分析紀錄' : '開始分析' }}
       </button>
     </div>
   </header>

@@ -34,17 +34,15 @@ const tabLoading = reactive({})
 const tabErrors = reactive({})
 
 const clusterTabs = [
-  { key: 'business', label: '商業', component: ClusterDetailBusinessPanel, loader: caseApi.getBusiness },
-  { key: 'population', label: '人口', component: ClusterDetailPopulationPanel, loader: caseApi.getPopulation },
-  { key: 'people', label: '人潮', component: ClusterDetailPeoplePanel, loader: caseApi.getPeople },
-  { key: 'transit', label: '交通', component: ClusterDetailTransitPanel, loader: caseApi.getTransit },
-  { key: 'spatial', label: '空間熱點', component: ClusterDetailSpatialPanel, loader: null },
+  { key: 'business', no: '01', label: '商業', component: ClusterDetailBusinessPanel, loader: caseApi.getBusiness },
+  { key: 'population', no: '02', label: '人口', component: ClusterDetailPopulationPanel, loader: caseApi.getPopulation },
+  { key: 'people', no: '03', label: '人潮', component: ClusterDetailPeoplePanel, loader: caseApi.getPeople },
+  { key: 'transit', no: '04', label: '交通', component: ClusterDetailTransitPanel, loader: caseApi.getTransit },
+  { key: 'spatial', no: '05', label: '熱區', component: ClusterDetailSpatialPanel, loader: null },
 ]
 
 const activeTabConfig = computed(() => clusterTabs.find((tab) => tab.key === activeTab.value) || clusterTabs[0])
-const activePanel = computed(
-  () => activeTabConfig.value.component,
-)
+const activePanel = computed(() => activeTabConfig.value.component)
 const activeVo = computed(() => tabVoMap[activeTab.value] || null)
 const activeError = computed(() => tabErrors[activeTab.value] || '')
 const isLoading = computed(() => isMetricClusterLoading.value || Boolean(tabLoading[activeTab.value]))
@@ -57,10 +55,12 @@ const toScore = (value) => {
   return Number.isFinite(score) ? Math.round(score) : '-'
 }
 
-const clusterTitle = computed(() => (metricCluster.value?.id || props.clusterId ? `生活圈 ${metricCluster.value?.id || props.clusterId}` : '生活圈詳情'))
+const clusterTitle = computed(() =>
+  props.clusterId ? `生活圈 ${props.clusterId}` : '生活圈詳情',
+)
 
 const clusterMetrics = computed(() => [
-  { key: 'composite', label: '綜合', value: toScore(metricCluster.value?.compositeScore) },
+  { key: 'composite', label: '綜合評分', value: toScore(metricCluster.value?.compositeScore) },
   { key: 'business', label: '商業', value: toScore(metricCluster.value?.businessScore) },
   { key: 'population', label: '人口', value: toScore(metricCluster.value?.populationScore) },
   { key: 'people', label: '人潮', value: toScore(metricCluster.value?.peopleScore) },
@@ -96,7 +96,7 @@ const loadMetricCluster = async () => {
     })
   } catch (error) {
     metricCluster.value = null
-    metricClusterError.value = error?.response?.data?.message || error.message || '取得生活圈資料失敗'
+    metricClusterError.value = error?.response?.data?.message || '取得生活圈資料失敗，請稍後再試。'
   } finally {
     isMetricClusterLoading.value = false
   }
@@ -122,15 +122,12 @@ const loadActiveTab = async () => {
   tabErrors[tab.key] = ''
 
   try {
-    const request = tab.buildRequest
-      ? tab.buildRequest()
-      : {
-          id: props.clusterId,
-          analysisId: props.analysisId,
-        }
-    tabVoMap[tab.key] = await tab.loader(request)
+    tabVoMap[tab.key] = await tab.loader({
+      id: props.clusterId,
+      analysisId: props.analysisId,
+    })
   } catch (error) {
-    tabErrors[tab.key] = error?.response?.data?.message || error.message || `取得${tab.label}資料失敗`
+    tabErrors[tab.key] = error?.response?.data?.message || `取得${tab.label}資料失敗，請稍後再試。`
     delete tabVoMap[tab.key]
   } finally {
     tabLoading[tab.key] = false
@@ -149,61 +146,77 @@ watch(activeTab, loadActiveTab)
 </script>
 
 <template>
-  <main class="main detail-layout">
-    <div class="content-scroll">
-      <div class="content-shell">
-        <section class="section cluster-detail-shell">
-          <div class="detail-hero cluster-detail-header">
-            <div class="detail-hero-main">
-              <div class="detail-title-row">
-                <button class="detail-back-button" type="button" aria-label="返回分析詳情" @click="emit('back')">
-                  <span aria-hidden="true">‹</span>
-                </button>
-                <h2>{{ clusterTitle }}</h2>
-              </div>
-              <p>Analysis #{{ analysisId || '-' }} / Cluster #{{ clusterId || '-' }}</p>
-            </div>
-
-            <div class="cluster-header-summary">
-              <span v-for="metric in headerMetrics" :key="metric.key" class="cluster-metric">
-                {{ metric.label }}
-                <strong>{{ metric.value }}</strong>
-              </span>
+  <div class="cluster-page">
+    <div class="cluster-shell">
+      <header class="cluster-header">
+        <div>
+          <div class="cluster-title-row">
+            <button class="back-btn" type="button" aria-label="返回分析" @click="emit('back')">
+              <span aria-hidden="true">‹</span>
+            </button>
+            <div class="cluster-title-main">
+              <p class="eyebrow">AREA / 生活圈</p>
+              <h1>{{ clusterTitle }}</h1>
+              <p>ANALYSIS #{{ analysisId || '-' }} / AREA #{{ clusterId || '-' }} · 候選生活圈</p>
             </div>
           </div>
+        </div>
 
-          <div v-if="metricClusterError" class="form-message error">{{ metricClusterError }}</div>
-          <div v-if="activeError" class="form-message error">{{ activeError }}</div>
+        <div class="cluster-score-row">
+          <div
+            v-for="metric in headerMetrics"
+            :key="metric.key"
+            class="score-pill"
+            :class="{ 'score-pill--main': metric.key === 'composite' }"
+          >
+            <span>{{ metric.label }}</span>
+            <b>{{ metric.value }}<small>/100</small></b>
+          </div>
+        </div>
+      </header>
 
-          <nav class="cluster-detail-tabs" aria-label="生活圈詳情頁籤">
-            <button
-              v-for="tab in clusterTabs"
-              :key="tab.key"
-              class="cluster-detail-tab"
-              :class="{ active: activeTab === tab.key }"
-              type="button"
-              @click="activeTab = tab.key"
-            >
-              {{ tab.label }}
-            </button>
-          </nav>
+      <div v-if="metricClusterError" class="form-message error">{{ metricClusterError }}</div>
+      <div v-else-if="activeError" class="form-message error">{{ activeError }}</div>
 
-          <component
-            :is="activePanel"
-            :vo="activeVo"
-            :analysis-id="analysisId"
-            :cluster-id="clusterId"
-            :metric-cluster="metricCluster"
-            :selected-age-group="selectedAgeGroup"
-          />
-        </section>
+      <nav class="cluster-tabs" aria-label="生活圈詳情頁籤">
+        <button
+          v-for="tab in clusterTabs"
+          :key="tab.key"
+          class="cluster-tab"
+          :class="{ active: activeTab === tab.key }"
+          type="button"
+          @click="activeTab = tab.key"
+        >
+          <b>{{ tab.no }}</b>
+          {{ tab.label }}
+        </button>
+      </nav>
 
-        <PageLoading
-          v-if="isLoading"
-          :title="loadingTitle"
-          description="系統正在載入目前頁簽需要的生活圈資料。"
-        />
-      </div>
+      <component
+        :is="activePanel"
+        :vo="activeVo"
+        :analysis-id="analysisId"
+        :cluster-id="clusterId"
+        :metric-cluster="metricCluster"
+        :selected-age-group="selectedAgeGroup"
+      />
     </div>
-  </main>
+
+    <PageLoading
+      v-if="isLoading"
+      :title="loadingTitle"
+      description="系統正在讀取這個生活圈的資料。"
+    />
+  </div>
 </template>
+
+<style scoped>
+.cluster-page {
+  position: relative;
+}
+
+.cluster-title-main .eyebrow {
+  margin-bottom: 7px;
+  font-size: 8px;
+}
+</style>

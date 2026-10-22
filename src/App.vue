@@ -1,20 +1,21 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
+import ProductView from '@/views/ProductView.vue'
 import AnalysisSubmitView from '@/views/AnalysisSubmitView.vue'
 import AnalysisListView from '@/views/AnalysisListView.vue'
 import AnalysisDetailView from '@/views/AnalysisDetailView.vue'
 import ClusterDetailView from '@/views/ClusterDetailView.vue'
 
-const validPages = new Set(['create', 'records', 'detail', 'cluster-detail'])
+const validPages = new Set(['product', 'create', 'records', 'detail', 'cluster-detail'])
 
 const parseId = (value) => (value && /^\d+$/.test(value) ? Number(value) : value)
 
 const readHashState = () => {
   const rawHash = window.location.hash.replace(/^#\/?/, '')
-  const [page = 'create', query = ''] = rawHash.split('?')
+  const [page = 'product', query = ''] = rawHash.split('?')
   const params = new URLSearchParams(query)
-  const active = validPages.has(page) ? page : 'create'
+  const active = validPages.has(page) ? page : 'product'
   const analysisId = parseId(params.get('id') || params.get('analysisId'))
   const clusterId = parseId(params.get('clusterId'))
   const activePage =
@@ -62,32 +63,46 @@ const syncStateFromHash = () => {
   clusterId.value = hashState.clusterId
 }
 
+const scrollToTop = async () => {
+  await nextTick()
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+}
+
 const navigate = (page) => {
-  activePage.value = page
+  activePage.value = validPages.has(page) ? page : 'product'
+
   if (!['detail', 'cluster-detail'].includes(page)) {
     analysisId.value = null
     clusterId.value = null
     selectedAnalysis.value = null
   }
+
+  scrollToTop()
 }
 
 const openAnalysisDetail = (analysis) => {
+  if (!analysis?.id) return
   analysisId.value = analysis.id
   clusterId.value = null
   selectedAnalysis.value = analysis
   activePage.value = 'detail'
+  scrollToTop()
 }
 
 const openClusterDetail = (metricCluster, analysis) => {
+  if (!metricCluster?.id) return
   clusterId.value = metricCluster.id
   selectedAnalysis.value = analysis || selectedAnalysis.value
   activePage.value = 'cluster-detail'
+  scrollToTop()
 }
 
 watch([activePage, analysisId, clusterId], writeHashState)
 
 onMounted(() => {
-  writeHashState()
+  if (!window.location.hash) {
+    writeHashState()
+  }
   window.addEventListener('hashchange', syncStateFromHash)
 })
 
@@ -97,24 +112,44 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="page">
-    <div class="app">
+  <div class="site">
+    <ProductView v-if="activePage === 'product'" @navigate="navigate" />
+
+    <div v-else class="app">
       <AppHeader :active-page="headerActivePage" @navigate="navigate" />
-      <AnalysisSubmitView v-if="activePage === 'create'" />
-      <AnalysisListView v-else-if="activePage === 'records'" @view-detail="openAnalysisDetail" />
-      <AnalysisDetailView
-        v-else-if="activePage === 'detail'"
-        :analysis-id="analysisId"
-        @back="navigate('records')"
-        @view-cluster="openClusterDetail"
-      />
-      <ClusterDetailView
-        v-else
-        :analysis-id="analysisId"
-        :cluster-id="clusterId"
-        :selected-age-group="selectedAnalysis?.selectedAgeGroup"
-        @back="activePage = 'detail'"
-      />
+
+      <div class="app-main">
+        <Transition name="page" mode="out-in">
+          <AnalysisSubmitView
+            v-if="activePage === 'create'"
+            key="create"
+            @view-detail="openAnalysisDetail"
+            @view-records="navigate('records')"
+          />
+          <AnalysisListView
+            v-else-if="activePage === 'records'"
+            key="records"
+            @view-detail="openAnalysisDetail"
+            @create="navigate('create')"
+          />
+          <AnalysisDetailView
+            v-else-if="activePage === 'detail'"
+            key="detail"
+            :analysis-id="analysisId"
+            @back="navigate('records')"
+            @create="navigate('create')"
+            @view-cluster="openClusterDetail"
+          />
+          <ClusterDetailView
+            v-else
+            key="cluster"
+            :analysis-id="analysisId"
+            :cluster-id="clusterId"
+            :selected-age-group="selectedAnalysis?.selectedAgeGroup"
+            @back="activePage = 'detail'"
+          />
+        </Transition>
+      </div>
     </div>
   </div>
 </template>

@@ -5,7 +5,7 @@ export const TAIWAN_BOUNDS = [
   [123.5, 26.6],
 ]
 
-export const MVT_SOURCE_ID = 'location-mvt'
+export const MVT_SOURCE_ID = 'luozi-mvt'
 
 export const MVT_SCHEMA_VERSION = 'v3'
 export const MVT_EXTENT = 4096
@@ -133,12 +133,12 @@ export const styleLayerZoom = (schemaLayer) => ({
 })
 
 export const CLUSTER_LOCATOR_COLORS = [
-  '#2563eb',
-  '#0f766e',
-  '#d97706',
-  '#7c3aed',
-  '#be123c',
-  '#0284c7',
-  '#65a30d',
-  '#c2410c',
+  '#14150f',
+  '#3f6b58',
+  '#a68148',
+  '#8c3b2e',
+  '#4f6d7a',
+  '#6b5b3e',
+  '#7a5c8e',
+  '#556b2f',
 ]

@@ -156,7 +156,7 @@ const coordinateTag = computed(() => {
   return '預設地點'
 })
 
-const coordinateNote = '實際送出的位置。拖拽地圖標記或在右側地圖點選即可微調。'
+const coordinateNote = '實際送出的位置。長按地圖標記 300ms 後拖拽，或在右側地圖點選即可微調。'
 
 const canSubmit = computed(() => {
   if (!form.productName.trim() || !form.industryCode) return false
@@ -231,6 +231,8 @@ const handleDistrictSelect = (district) => {
   const nextCode = String(district.townCode)
   if (nextCode === String(selectedDistrictCode.value)) return
 
+  identifySeq += 1
+  isIdentifying.value = false
   selectedDistrictCode.value = nextCode
   locationSource.value = 'district'
   identifyError.value = ''
@@ -249,8 +251,9 @@ const handleMapPick = ({ longitude: nextLongitude, latitude: nextLatitude }) => 
   const lat = Number(nextLatitude)
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) return
 
-  form.longitude = Number(lng.toFixed(6))
-  form.latitude = Number(lat.toFixed(6))
+  // Keep the boundary intersection precise; rounding can move a point outside.
+  form.longitude = lng
+  form.latitude = lat
   locationSource.value = 'map'
 
   const previousCode = selectedDistrictCode.value
@@ -261,6 +264,8 @@ const handleMapPick = ({ longitude: nextLongitude, latitude: nextLatitude }) => 
 }
 
 const handleManualInput = () => {
+  identifySeq += 1
+  isIdentifying.value = false
   locationSource.value = 'manual'
   if (manualSessionDistrict === null) {
     manualSessionDistrict = selectedDistrictCode.value
@@ -282,6 +287,8 @@ const handleManualInput = () => {
 }
 
 const applyQuickSpot = (spot) => {
+  identifySeq += 1
+  isIdentifying.value = false
   form.longitude = Number(Number(spot.longitude).toFixed(6))
   form.latitude = Number(Number(spot.latitude).toFixed(6))
   selectedDistrictCode.value = String(spot.townCode)

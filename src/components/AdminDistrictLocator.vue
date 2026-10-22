@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   findAdminDistrictByCode,
   flattenAdminDistricts,
@@ -32,10 +32,31 @@ const selectedDistrict = computed(() =>
   findAdminDistrictByCode(districts.value, props.modelValue),
 )
 const districtLabel = computed(() => formatAdminDistrict(selectedDistrict.value))
+const selectedCountyCode = ref('')
+const selectedCounty = computed(() => props.counties.find(
+  (county) => String(county.countyCode) === selectedCountyCode.value,
+))
+const countyDistricts = computed(() => flattenAdminDistricts(selectedCounty.value ? [selectedCounty.value] : []))
+
+// Map picks, quick spots and form resets backfill both fields without running
+// the user-only county-change handler or replacing the district with its first.
+watch(selectedDistrict, (district) => {
+  selectedCountyCode.value = district ? String(district.countyCode) : ''
+}, { immediate: true })
+
+const handleCountyChange = (event) => {
+  const code = event.target.value
+  if (code === selectedCountyCode.value) return
+  selectedCountyCode.value = code
+  const district = countyDistricts.value[0]
+  // Let the existing parent handler compare the point's current district before
+  // updating modelValue, so selecting the same district keeps its exact point.
+  if (district) emit('select', district)
+}
 
 const handleChange = (event) => {
   const code = event?.target?.value || ''
-  const district = findAdminDistrictByCode(districts.value, code)
+  const district = findAdminDistrictByCode(countyDistricts.value, code)
   if (district) emit('select', district)
 }
 </script>
@@ -58,27 +79,45 @@ const handleChange = (event) => {
       <span class="locator-scope">雙向同步</span>
     </div>
 
-    <div class="field locator-field">
-      <label for="adminDistrict">行政區</label>
-      <select
-        id="adminDistrict"
-        :value="String(modelValue || '')"
-        :disabled="loading"
-        @change="handleChange"
-      >
-        <option value="" disabled>{{ loading ? '載入行政區…' : '選擇行政區' }}</option>
-        <optgroup v-for="county in counties" :key="county.countyCode" :label="county.countyName">
+    <div class="locator-fields">
+      <div class="field locator-field">
+        <label for="adminCounty">縣市</label>
+        <select
+          id="adminCounty"
+          :value="selectedCountyCode"
+          :disabled="loading || !counties.length"
+          @change="handleCountyChange"
+        >
+          <option value="" disabled>{{ loading ? '載入縣市…' : '選擇縣市' }}</option>
           <option
-            v-for="town in county.towns"
-            :key="town.townCode"
-            :value="String(town.townCode)"
+            v-for="county in counties"
+            :key="county.countyCode"
+            :value="String(county.countyCode)"
           >
-            {{ town.townName }}
+            {{ county.countyName }}
           </option>
-        </optgroup>
-      </select>
-      <div class="field-note">選不同區會把中心點移到該區代表點；同區則保留目前位置。</div>
+        </select>
+      </div>
+      <div class="field locator-field">
+        <label for="adminDistrict">行政區</label>
+        <select
+          id="adminDistrict"
+          :value="String(modelValue || '')"
+          :disabled="loading || !selectedCounty || !countyDistricts.length"
+          @change="handleChange"
+        >
+          <option value="" disabled>{{ loading ? '載入行政區…' : selectedCounty ? '選擇行政區' : '請先選擇縣市' }}</option>
+          <option
+            v-for="district in countyDistricts"
+            :key="district.townCode"
+            :value="String(district.townCode)"
+          >
+            {{ district.townName }}
+          </option>
+        </select>
+      </div>
     </div>
+    <div class="field-note locator-note">切換縣市會選取該縣市的第一個行政區；選不同區會移到代表點，同區保留目前位置。</div>
 
     <div class="locator-status" :class="{ 'is-selected': selectedDistrict }">
       <span class="locator-status-dot" aria-hidden="true"></span>
@@ -175,6 +214,14 @@ const handleChange = (event) => {
   white-space: nowrap;
 }
 
+.locator-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.locator-field { min-width: 0; }
+
 .locator-field label {
   color: var(--muted);
   font-size: 10px;
@@ -186,8 +233,12 @@ const handleChange = (event) => {
   font-size: 13px;
 }
 
-.locator-field .field-note {
+.locator-note {
   margin-top: 5px;
+}
+
+@media (max-width: 480px) {
+  .locator-fields { grid-template-columns: 1fr; }
 }
 
 .locator-status {
